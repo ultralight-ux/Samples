@@ -122,13 +122,7 @@ void Tab::OnChangeCursor(View* caller, Cursor cursor) {
     ui_->SetCursor(cursor);
 }
 
-void Tab::OnAddConsoleMessage(View* caller,
-  MessageSource source,
-  MessageLevel level,
-  const String& message,
-  uint32_t line_number,
-  uint32_t column_number,
-  const String& source_id) {
+void Tab::OnAddConsoleMessage(View* caller, const ConsoleMessage& msg) {
 }
 
 RefPtr<View> Tab::OnCreateChildView(ultralight::View* caller,

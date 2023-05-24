@@ -199,6 +199,7 @@ void Sample::Run() {
       ///
       /// Re-paint the Surfaces of all Views as needed.
       ///
+      renderer_->RefreshDisplay(0);
       renderer_->Render();
 
       if (is_animating_)
@@ -706,7 +707,7 @@ RefPtr<View> Sample::OnCreateChildView(ultralight::View* caller,
   ViewConfig view_config;
   view_config.is_accelerated = false;
   view_config.initial_device_scale = window_->scale();
-  RefPtr<View> new_view = renderer_->CreateView(width_, height_, view_config, nullptr);
+  RefPtr<View> new_view = renderer_->CreateView(width_, height_, view_config, nullptr, 0);
   WebTile* new_tile = new WebTile(new_view);
   new_view->set_view_listener(this);
   new_view->set_load_listener(this);

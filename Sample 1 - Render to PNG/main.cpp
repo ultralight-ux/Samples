@@ -107,7 +107,7 @@ public:
     view_config.font_family_standard = "Arial";
     view_config.is_accelerated = false;
 
-    view_ = renderer_->CreateView(1600, 1600, view_config, nullptr);
+    view_ = renderer_->CreateView(1600, 1600, view_config, nullptr, 0);
 
     ///
     /// Register our MyApp instance as a LoadListener so we can handle the View's OnFinishLoading
@@ -156,6 +156,7 @@ public:
     /// @note:
     ///   Calling Renderer::Render will render any dirty Views to their respective Surfaces.
     /// 
+    renderer_->RefreshDisplay(0);
     renderer_->Render();
 
     ///
