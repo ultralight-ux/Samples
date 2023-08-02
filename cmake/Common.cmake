@@ -44,21 +44,60 @@ macro(add_app APP_NAME)
 
     if (UL_PLATFORM MATCHES "MacOS")
         # Enable High-DPI on macOS through our custom Info.plist template
-        set_target_properties(${APP_NAME} PROPERTIES MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Info.plist.in) 
-    endif()
+        set_target_properties(${APP_NAME} PROPERTIES
+            BUNDLE True
+            MACOSX_BUNDLE_GUI_IDENTIFIER ultralight.${APP_NAME}
+            MACOSX_BUNDLE_BUNDLE_NAME ${APP_NAME}
+            MACOSX_BUNDLE_EXECUTABLE_NAME ${APP_NAME}
+            MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
+            MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
+            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Info.plist.in
+        )
 
-    if (UL_PLATFORM MATCHES "Windows")
-        # Use main instead of WinMain for Windows subsystem executables
-        set_target_properties(${APP_NAME} PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
-    endif()
+        set(INSTALL_PATH "${INSTALL_DIR}/${APP_NAME}.app")
+        set(BUNDLE_PATH ${CMAKE_CURRENT_BINARY_DIR}/${APP_NAME}.app)
+    
+        configure_file(
+            ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/FixBundle.cmake.in
+            ${CMAKE_CURRENT_BINARY_DIR}/FixBundle.cmake
+            @ONLY
+            )
+    
+        install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/FixBundle.cmake)
+    
+        set(CPACK_GENERATOR "BUNDLE")
+        include(CPack)
+    
+        set(ASSET_PATH "${BUNDLE_PATH}/Contents/Resources/assets")
+    
+        INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/assets/" DESTINATION "${ASSET_PATH}" OPTIONAL)
+        INSTALL(DIRECTORY "${ULTRALIGHT_RESOURCES_DIR}" DESTINATION "${ASSET_PATH}")
+        if (NEEDS_INSPECTOR)
+            INSTALL(DIRECTORY "${ULTRALIGHT_INSPECTOR_DIR}" DESTINATION "${ASSET_PATH}")
+        endif ()
+    
+        INSTALL(TARGETS ${APP_NAME}
+            RUNTIME DESTINATION "${INSTALL_PATH}" PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+            BUNDLE  DESTINATION "${INSTALL_DIR}" PERMISSIONS OWNER_EXECUTE OWNER_WRITE OWNER_READ
+            )
+    else ()
 
-    set(INSTALL_PATH "${INSTALL_DIR}/${APP_NAME}")
+        if (UL_PLATFORM MATCHES "Windows")
+            # Use main instead of WinMain for Windows subsystem executables
+            set_target_properties(${APP_NAME} PROPERTIES LINK_FLAGS "/ENTRY:mainCRTStartup")
+        endif()
 
-    INSTALL(TARGETS ${APP_NAME}
-        RUNTIME DESTINATION "${INSTALL_PATH}"
-        BUNDLE  DESTINATION "${INSTALL_PATH}")
+        set(INSTALL_PATH "${INSTALL_DIR}/${APP_NAME}")
 
-    INSTALL(DIRECTORY "${ULTRALIGHT_BINARY_DIR}/" DESTINATION "${INSTALL_PATH}")
-    INSTALL(DIRECTORY "${ULTRALIGHT_RESOURCES_DIR}" DESTINATION "${INSTALL_PATH}/assets")
-    INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/assets/" DESTINATION "${INSTALL_PATH}/assets" OPTIONAL)
+        INSTALL(TARGETS ${APP_NAME}
+            RUNTIME DESTINATION "${INSTALL_PATH}"
+            BUNDLE  DESTINATION "${INSTALL_PATH}")
+
+        INSTALL(DIRECTORY "${ULTRALIGHT_BINARY_DIR}/" DESTINATION "${INSTALL_PATH}")
+        INSTALL(DIRECTORY "${ULTRALIGHT_RESOURCES_DIR}" DESTINATION "${INSTALL_PATH}/assets")
+        if (NEEDS_INSPECTOR)
+            INSTALL(DIRECTORY "${ULTRALIGHT_INSPECTOR_DIR}" DESTINATION "${INSTALL_PATH}/assets")
+        endif ()
+        INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/assets/" DESTINATION "${INSTALL_PATH}/assets" OPTIONAL)
+    endif ()
 endmacro ()
