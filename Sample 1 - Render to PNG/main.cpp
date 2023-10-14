@@ -103,7 +103,7 @@ public:
     view_config.initial_device_scale = 2.0;
     view_config.is_accelerated = false;
 
-    view_ = renderer_->CreateView(1600, 800, view_config, nullptr, 0);
+    view_ = renderer_->CreateView(1600, 800, view_config, nullptr);
 
     ///
     /// Register our MyApp instance as a LoadListener so we can handle the View's OnFinishLoading
