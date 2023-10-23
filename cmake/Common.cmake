@@ -13,6 +13,8 @@ set(ULTRALIGHT_RESOURCES_DIR "${SDK_ROOT}/resources")
 set(ULTRALIGHT_LIBRARY_DIR "${SDK_ROOT}/bin"
                            "${SDK_ROOT}/lib")
 
+get_filename_component(INFO_PLIST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Info.plist.in" REALPATH)
+
 macro(add_console_app APP_NAME)
     include_directories("${ULTRALIGHT_INCLUDE_DIR}")
     link_directories("${ULTRALIGHT_LIBRARY_DIR}")
@@ -51,7 +53,7 @@ macro(add_app APP_NAME)
             MACOSX_BUNDLE_EXECUTABLE_NAME ${APP_NAME}
             MACOSX_BUNDLE_BUNDLE_VERSION "1.0"
             MACOSX_BUNDLE_SHORT_VERSION_STRING "1.0"
-            MACOSX_BUNDLE_INFO_PLIST ${CMAKE_CURRENT_SOURCE_DIR}/../cmake/Info.plist.in
+            MACOSX_BUNDLE_INFO_PLIST ${INFO_PLIST_PATH}
         )
 
         set(INSTALL_PATH "${INSTALL_DIR}/${APP_NAME}.app")
