@@ -14,6 +14,7 @@ set(ULTRALIGHT_LIBRARY_DIR "${SDK_ROOT}/bin"
                            "${SDK_ROOT}/lib")
 
 get_filename_component(INFO_PLIST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Info.plist.in" REALPATH)
+get_filename_component(ENTITLEMENTS_PLIST_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Entitlements.plist" REALPATH)
 
 macro(add_console_app APP_NAME)
     include_directories("${ULTRALIGHT_INCLUDE_DIR}")
@@ -45,6 +46,9 @@ macro(add_app APP_NAME)
     add_executable(${APP_NAME} WIN32 MACOSX_BUNDLE ${ARGN})
 
     if (UL_PLATFORM MATCHES "MacOS")
+        # Include Entitlements.plist
+        set_source_files_properties(${ENTITLEMENTS_PLIST_PATH} PROPERTIES MACOSX_PACKAGE_LOCATION "Contents")
+
         # Enable High-DPI on macOS through our custom Info.plist template
         set_target_properties(${APP_NAME} PROPERTIES
             BUNDLE True
@@ -67,10 +71,16 @@ macro(add_app APP_NAME)
     
         install(SCRIPT ${CMAKE_CURRENT_BINARY_DIR}/FixBundle.cmake)
     
+        # TODO: Handle code signing 
         set(CPACK_GENERATOR "BUNDLE")
+        set(CPACK_BUNDLE_APPLE_ENTITLEMENTS ${ENTITLEMENTS_PLIST_PATH})
+
         include(CPack)
     
         set(ASSET_PATH "${BUNDLE_PATH}/Contents/Resources/assets")
+
+        # Install Entitlements.plist to the Contents folder of the app bundle
+        INSTALL(FILES ${ENTITLEMENTS_PLIST_PATH} DESTINATION "${BUNDLE_PATH}/Contents")
     
         INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/assets/" DESTINATION "${ASSET_PATH}" OPTIONAL)
         INSTALL(DIRECTORY "${ULTRALIGHT_RESOURCES_DIR}" DESTINATION "${ASSET_PATH}")
