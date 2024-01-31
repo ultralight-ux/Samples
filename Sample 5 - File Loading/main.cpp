@@ -55,6 +55,8 @@ public:
     ///
     window_->SetTitle("Ultralight Sample 5 - File Loading");
 
+    window_->set_listener(this);
+
     ///
     /// Create an Overlay using the same dimensions as our Window.
     ///
