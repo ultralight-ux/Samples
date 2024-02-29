@@ -18,8 +18,14 @@ add_subdirectory("Sample 7 - OpenGL Integration")
 add_subdirectory("Sample 8 - Web Browser")
 add_subdirectory("Sample 9 - Multi Window")
 
+set(SAMPLES_TARGETS Sample1 Sample2 Sample3 Sample4 Sample5 Sample6 Sample7 Sample8 Sample9)
+
+foreach(target ${SAMPLES_TARGETS})
+    add_dependencies(${target} GenerateSDK)
+endforeach()
+
 if (${ALLINONE_BUILD})
     add_custom_target(install_samples ALL "${CMAKE_COMMAND}" 
         -P "${CMAKE_CURRENT_BINARY_DIR}/cmake_install.cmake" 
-        DEPENDS Sample1 Sample2 Sample3 Sample4 Sample5 Sample6 Sample7 Sample8 Sample9) 
+        DEPENDS ${SAMPLES_TARGETS}) 
 endif ()
