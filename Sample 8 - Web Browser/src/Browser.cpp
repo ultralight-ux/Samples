@@ -6,7 +6,6 @@
 Browser::Browser()  {
   Settings settings;
   Config config;
-  config.scroll_timer_delay = 1.0 / 90.0;
   app_ = App::Create(settings, config);
     
   window_ = Window::Create(app_->main_monitor(), 1024, 768, false, 

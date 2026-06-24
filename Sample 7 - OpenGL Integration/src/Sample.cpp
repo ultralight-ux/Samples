@@ -66,8 +66,6 @@ Sample::Sample() {
   glEnable(GL_TEXTURE_2D);
 
   Config config;
-  config.scroll_timer_delay = 1.0 / (mode->refreshRate);
-  config.animation_timer_delay = 1.0 / (mode->refreshRate);
 
   ///
   /// Pass our configuration to the Platform singleton so that the library
