@@ -1,6 +1,5 @@
 #include <AppCore/App.h>
 #include <AppCore/Window.h>
-#include <AppCore/Overlay.h>
 #include <AppCore/JSHelpers.h>
 
 using namespace ultralight;
@@ -29,7 +28,7 @@ class MyApp : public WindowListener,
               public LoadListener {
   RefPtr<App> app_;
   RefPtr<Window> window_;
-  RefPtr<Overlay> overlay_;
+  RefPtr<Panel> panel_;
 public:
   MyApp() {
     ///
@@ -45,7 +44,7 @@ public:
     ///
     /// This command creates a native platform window and shows it immediately.
     /// 
-    window_ = Window::Create(app_->main_monitor(), 300, 300, false, kWindowFlags_Titled);
+    window_ = Window::Create(app_->main_monitor(), 300, 300, false, WindowFlags::Titled);
 
     ///
     /// Set our window title.
@@ -59,20 +58,20 @@ public:
     window_->set_listener(this);
 
     ///
-    /// Create an Overlay using the same dimensions as our Window.
+    /// Add a panel that fills the entire window.
     ///
-    overlay_ = Overlay::Create(window_, window_->width(), window_->height(), 0, 0);
+    panel_ = window_->AddPanel();
 
     ///
     /// Register our MyApp instance as a load listener so we can handle the View's OnDOMReady
     /// event below.
     ///
-    overlay_->view()->set_load_listener(this);
+    panel_->view()->set_load_listener(this);
 
     ///
     /// Load a string of HTML (we're using a C++11 Raw String Literal)
     ///
-    overlay_->view()->LoadHTML(htmlString());
+    panel_->view()->LoadHTML(htmlString());
   }
 
   virtual ~MyApp() {}
@@ -134,13 +133,6 @@ public:
   virtual void OnClose(ultralight::Window* window) override {
     app_->Quit();
   }
-
-  ///
-  /// Inherited from WindowListener, called when the Window is resized.
-  /// 
-  /// (Not used in this sample)
-  ///
-  virtual void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override {}
 
   void Run() {
     app_->Run();

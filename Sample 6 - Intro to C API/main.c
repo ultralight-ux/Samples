@@ -26,7 +26,7 @@
 /// Various globals
 ULApp app = 0;
 ULWindow window = 0;
-ULOverlay overlay = 0;
+ULPanel panel = 0;
 ULView view = 0;
 
 /// Forward declaration of our OnUpdate callback.
@@ -34,9 +34,6 @@ void OnUpdate(void* user_data);
 
 /// Forward declaration of our OnClose callback.
 void OnClose(void* user_data, ULWindow window);
-
-/// Forward declaration of our OnResize callback.
-void OnResize(void* user_data, ULWindow window, unsigned int width, unsigned int height);
 
 /// Forward declaration of our OnDOMReady callback.
 void OnDOMReady(void* user_data, ULView caller, unsigned long long frame_id,
@@ -60,7 +57,7 @@ void Init() {
   ///
   /// Register a callback to handle app update logic.
   ///
-  ulAppSetUpdateCallback(app, OnUpdate, 0);
+  ulAppSetUpdateCallback(app, OnUpdate, 0, 0);
 
   ///
   /// Done using settings/config, make sure to destroy anything we create
@@ -81,27 +78,27 @@ void Init() {
 
   ///
   /// Register a callback to handle window close.
-  /// 
-  ulWindowSetCloseCallback(window, OnClose, 0);
+  ///
+  ulWindowSetCloseCallback(window, OnClose, 0, 0);
 
   ///
-  /// Register a callback to handle window resize.
+  /// Add a panel that fills the window. Panels live in the window's layout tree and create an
+  /// HTML view for us to display content in; the window manages their placement, sizing, DPI,
+  /// input, and painting automatically (there is no resize handling to write).
   ///
-  ulWindowSetResizeCallback(window, OnResize, 0);
+  /// Passing NULL for the options and view-config uses the defaults (a full-window panel with
+  /// a new View).
+  ///
+  panel = ulWindowAddPanel(window, 0, 0);
 
   ///
-  /// Create an overlay same size as our window at 0,0 (top-left) origin. Overlays also create an
-  /// HTML view for us to display content in.
+  /// Get the panel's view.
   ///
   /// **Note**:
-  ///     Ownership of the view remains with the overlay since we don't explicitly create it.
+  ///     This returns a new owned instance referring to the panel's View; we must destroy it
+  ///     when we're done (it releases only our reference, never the panel's).
   ///
-  overlay = ulCreateOverlay(window, ulWindowGetWidth(window), ulWindowGetHeight(window), 0, 0);
-  
-  ///
-  /// Get the overlay's view.
-  ///
-  view = ulOverlayGetView(overlay);
+  view = ulPanelGetView(panel);
 
   ///
   /// Register a callback to handle our view's DOMReady event. We will use this event to setup any
@@ -135,14 +132,6 @@ void OnUpdate(void* user_data) {
 ///
 void OnClose(void* user_data, ULWindow window) {
   ulAppQuit(app);
-}
-
-///
-/// This is called whenever the window resizes. Width and height are in DPI-independent logical
-/// coordinates (not pixels).
-///
-void OnResize(void* user_data, ULWindow window, unsigned int width, unsigned int height) {
-  ulOverlayResize(overlay, width, height);
 }
 
 ///
@@ -234,7 +223,8 @@ void Shutdown() {
   ///
   /// Explicitly destroy everything we created in Init().
   ///
-  ulDestroyOverlay(overlay);
+  ulDestroyView(view);
+  ulDestroyPanel(panel);
   ulDestroyWindow(window);
   ulDestroyApp(app);
 }

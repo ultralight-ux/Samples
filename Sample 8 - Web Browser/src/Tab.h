@@ -11,29 +11,19 @@ using namespace ultralight;
 class Tab : public ViewListener,
             public LoadListener {
 public:
-  Tab(UI* ui, uint64_t id, uint32_t width, uint32_t height, int x, int y);
+  Tab(UI* ui, uint64_t id, bool hidden);
   ~Tab();
 
   void set_ready_to_close(bool ready) { ready_to_close_ = ready; }
   bool ready_to_close() { return ready_to_close_; }
-                
-  RefPtr<View> view() { return overlay_->view(); }
+
+  RefPtr<View> view() { return panel_->view(); }
 
   void Show();
 
   void Hide();
 
   void ToggleInspector();
-
-  bool IsInspectorShowing() const;
-
-  IntRect GetInspectorResizeDragHandle() const;
-
-  int GetInspectorHeight() const;
-
-  void SetInspectorHeight(int height);
-                
-  void Resize(uint32_t width, uint32_t height);
 
   // Inherited from Listener::View
   virtual void OnChangeTitle(View* caller, const String& title) override;
@@ -59,9 +49,9 @@ public:
 
 protected:
   UI* ui_;
-  RefPtr<Overlay> overlay_;
-  RefPtr<Overlay> inspector_overlay_;
+  RefPtr<Container> container_;
+  RefPtr<Panel> panel_;
+  RefPtr<Panel> inspector_panel_;
   uint64_t id_;
   bool ready_to_close_ = false;
-  uint32_t container_width_, container_height_;
 };

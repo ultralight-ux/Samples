@@ -2,13 +2,13 @@
 
 static UI* g_ui = 0;
 
-#define UI_HEIGHT 80
-
-UI::UI(RefPtr<Window> window) : window_(window), cur_cursor_(Cursor::kCursor_Pointer), 
-is_resizing_inspector_(false), is_over_inspector_resize_drag_handle_(false) {
-  uint32_t window_width = window_->width();
-  ui_height_ = (uint32_t)std::round(UI_HEIGHT * window_->scale());
-  overlay_ = Overlay::Create(window_, window_width, ui_height_, 0, 0);
+UI::UI(RefPtr<Window> window) : window_(window) {
+  ///
+  /// The UI (toolbar + tab strip) is a fixed-height panel at the top of the window's layout
+  /// tree; each Tab adds its own pane beneath it. Sizes are in logical pixels, so the strip
+  /// scales with DPI automatically.
+  ///
+  panel_ = window_->AddPanel({ .key = "ui", .size = "80px" });
   g_ui = this;
 
   view()->set_load_listener(this);
@@ -17,74 +17,16 @@ is_resizing_inspector_(false), is_over_inspector_resize_drag_handle_(false) {
 }
 
 UI::~UI() {
-  view()->set_load_listener(nullptr);
-  view()->set_view_listener(nullptr);
-  g_ui = nullptr;
-}
-
-bool UI::OnKeyEvent(const ultralight::KeyEvent& evt) {
-  return true;
-}
-
-bool UI::OnMouseEvent(const ultralight::MouseEvent& evt) {
-  if (active_tab() && active_tab()->IsInspectorShowing()) {
-    float x_px = std::round(evt.x * window()->scale());
-    float y_px = std::round(evt.y * window()->scale());
-
-    if (is_resizing_inspector_) {
-      int resize_delta = inspector_resize_begin_mouse_y_ - y_px;
-      int new_inspector_height = inspector_resize_begin_height_ + resize_delta;
-      active_tab()->SetInspectorHeight(new_inspector_height);
-
-      if (evt.type == MouseEvent::kType_MouseUp) {
-        is_resizing_inspector_ = false;
-      }
-
-      return false;
-    }
-
-    IntRect drag_handle = active_tab()->GetInspectorResizeDragHandle();
-
-    bool over_drag_handle = drag_handle.Contains(Point(x_px, y_px));
-
-    if (over_drag_handle && !is_over_inspector_resize_drag_handle_) {
-      // We entered the drag area
-      window()->SetCursor(Cursor::kCursor_NorthSouthResize);
-      is_over_inspector_resize_drag_handle_ = true;
-    } else if (!over_drag_handle && is_over_inspector_resize_drag_handle_) {
-      // We left the drag area, restore previous cursor
-      window()->SetCursor(cur_cursor_);
-      is_over_inspector_resize_drag_handle_ = false;
-    }
-
-    if (over_drag_handle && evt.type == MouseEvent::kType_MouseDown && !is_resizing_inspector_) {
-      is_resizing_inspector_ = true;
-      inspector_resize_begin_mouse_y_ = y_px;
-      inspector_resize_begin_height_ = active_tab()->GetInspectorHeight();
-    }
-
-    return !over_drag_handle;
+  // The panel's View is gone once the window closed (handles sever); guard the detach.
+  if (RefPtr<View> ui_view = view()) {
+    ui_view->set_load_listener(nullptr);
+    ui_view->set_view_listener(nullptr);
   }
-
-  return true;
+  g_ui = nullptr;
 }
 
 void UI::OnClose(ultralight::Window* window) {
   App::instance()->Quit();
-}
-
-void UI::OnResize(ultralight::Window* window, uint32_t width, uint32_t height) {
-  int tab_height = window->height() - ui_height_;
-
-  if (tab_height < 1)
-    tab_height = 1;
-
-  overlay_->Resize(window->width(), ui_height_);
-
-  for (auto& tab : tabs_) {
-    if (tab.second)
-      tab.second->Resize(window->width(), (uint32_t)tab_height);
-  }
 }
 
 void UI::OnDOMReady(View* caller, uint64_t frame_id, bool is_main_frame, const String& url) {
@@ -177,7 +119,7 @@ void UI::OnActiveTabChange(const JSObject& obj, const JSArgs& args) {
     auto& tab = tabs_[id];
     if (!tab)
       return;
-      
+
     tabs_[active_tab_id_]->Hide();
 
     if (tabs_[active_tab_id_]->ready_to_close()) {
@@ -187,7 +129,7 @@ void UI::OnActiveTabChange(const JSObject& obj, const JSArgs& args) {
 
     active_tab_id_ = id;
     tabs_[active_tab_id_]->Show();
-      
+
     auto tab_view = tabs_[active_tab_id_]->view();
     SetLoading(tab_view->is_loading());
     SetCanGoBack(tab_view->CanGoBack());
@@ -209,11 +151,11 @@ void UI::OnRequestChangeURL(const JSObject& obj, const JSArgs& args) {
 
 void UI::CreateNewTab() {
   uint64_t id = tab_id_counter_++;
-  RefPtr<Window> window = window_;
-  int tab_height = window->height() - ui_height_;
-  if (tab_height < 1)
-    tab_height = 1;
-  tabs_[id].reset(new Tab(this, id, window->width(), (uint32_t)tab_height, 0, ui_height_));
+
+  // The first tab is created visible (the tab strip's activation callback early-outs for it);
+  // later tabs start hidden and are shown when the strip makes them active.
+  bool hidden = !tabs_.empty();
+  tabs_[id].reset(new Tab(this, id, hidden));
   tabs_[id]->view()->LoadURL("file:///new_tab_page.html");
 
   RefPtr<JSContext> lock(view()->LockJSContext());
@@ -222,11 +164,8 @@ void UI::CreateNewTab() {
 
 RefPtr<View> UI::CreateNewTabForChildView(const String& url) {
   uint64_t id = tab_id_counter_++;
-  RefPtr<Window> window = window_;
-  int tab_height = window->height() - ui_height_;
-  if (tab_height < 1)
-    tab_height = 1;
-  tabs_[id].reset(new Tab(this, id, window->width(), (uint32_t)tab_height, 0, ui_height_));
+  bool hidden = !tabs_.empty();
+  tabs_[id].reset(new Tab(this, id, hidden));
 
   RefPtr<JSContext> lock(view()->LockJSContext());
   addTab({ id, "", url, tabs_[id]->view()->is_loading() });

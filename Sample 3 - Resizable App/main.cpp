@@ -1,20 +1,15 @@
 #include <AppCore/App.h>
 #include <AppCore/Window.h>
-#include <AppCore/Overlay.h>
 
 using namespace ultralight;
-
-#define WINDOW_WIDTH    900
-#define WINDOW_HEIGHT   600
-#define LEFT_PANE_WIDTH 200
 
 ///
 /// Welcome to Sample 3!
 ///
-/// In this sample we'll continue working with the AppCore API and show how to make your app
-/// responsive to changes in window size by updating the layout of multiple overlays.
+/// In this sample we'll continue working with the AppCore API and use the window's layout tree
+/// to build a multi-pane application that responds to changes in window size automatically.
 ///
-/// We will create a window with two overlays-- a left pane with a fixed width and a right pane
+/// We will split the window into two panels-- a left pane with a fixed width and a right pane
 /// that takes up the remaining width.
 ///
 ///    +----------------------------------------------------+
@@ -31,17 +26,19 @@ using namespace ultralight;
 ///    |               |                                    |
 ///    |               |                                    |
 ///    +----------------------------------------------------+
-/// 
-/// To respond to resize events, we'll attach a WindowListener to our window and re-calculate
-/// layout of our overlays in the OnResize callback.
+///
+/// Panels declare their sizes in CSS-style units and the window re-resolves the layout whenever
+/// it is resized or moved to a monitor with a different DPI-- there is no resize math to write.
+///
+/// We'll also mark the split resizable, which puts a draggable divider between the two panes.
 ///
 
 class MyApp : public WindowListener,
               public ViewListener {
   RefPtr<App> app_;
   RefPtr<Window> window_;
-  RefPtr<Overlay> left_pane_;
-  RefPtr<Overlay> right_pane_;
+  RefPtr<Panel> left_pane_;
+  RefPtr<Panel> right_pane_;
 public:
   MyApp() {
     ///
@@ -51,10 +48,10 @@ public:
 
     ///
     /// Create a resizable window by passing by OR'ing our window flags with
-    /// kWindowFlags_Resizable.
+    /// WindowFlags::Resizable.
     ///
-    window_ = Window::Create(app_->main_monitor(), WINDOW_WIDTH, WINDOW_HEIGHT, false,
-        kWindowFlags_Titled | kWindowFlags_Resizable);
+    window_ = Window::Create(app_->main_monitor(), 900, 600, false,
+        WindowFlags::Titled | WindowFlags::Resizable);
 
     ///
     /// Set the title of our window.
@@ -62,26 +59,24 @@ public:
     window_->SetTitle("Ultralight Sample 3 - Resize Me!");
 
     ///
-    /// Create the overlays for our left and right panes-- we don't care about their initial size
-    /// and position because they'll be set when we call OnResize() below.
+    /// Split the window with a resizable row: a fixed-width sidebar and a fluid content pane.
     ///
-    left_pane_ = Overlay::Create(window_.get(), 100, 100, 0, 0);
-    right_pane_ = Overlay::Create(window_.get(), 100, 100, 0, 0);
+    /// A panel with no declared size takes one flex share of the free space, so the right pane
+    /// fills whatever the sidebar leaves. The `min_size` constraint keeps the sidebar usable
+    /// when the user drags the divider between the panes.
+    ///
+    RefPtr<Container> split = window_->layout()->AddRow({ .resizable = true });
+    left_pane_ = split->AddPanel({ .key = "sidebar", .size = "200px", .min_size = "100px" });
+    right_pane_ = split->AddPanel({ .key = "content" });
 
     ///
-    /// Force a call to OnResize to perform initial layout and sizing of our left and right
-    /// overlays.
-    ///
-    OnResize(window_.get(), window_->width(), window_->height());
-
-    ///
-    /// Load some HTML into our left and right overlays.
+    /// Load some HTML into our left and right panes.
     ///
     left_pane_->view()->LoadURL("file:///sidebar.html");
     right_pane_->view()->LoadURL("file:///content.html");
 
     ///
-    /// Register our MyApp instance as a WindowListener so we can handle the Window's OnResize
+    /// Register our MyApp instance as a WindowListener so we can handle the Window's OnClose
     /// event below.
     ///
     window_->set_listener(this);
@@ -98,30 +93,11 @@ public:
 
   ///
   /// Inherited from WindowListener, called when the Window is closed.
-  /// 
+  ///
   /// We exit the application when the window is closed.
   ///
   virtual void OnClose(ultralight::Window* window) override {
     app_->Quit();
-  }
-
-  ///
-  /// Inherited from WindowListener, called when the Window is resized.
-  ///
-  virtual void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override {
-    uint32_t left_pane_width_px = window_->ScreenToPixels(LEFT_PANE_WIDTH);
-    left_pane_->Resize(left_pane_width_px, height);
-
-    // Calculate the width of our right pane (window width - left width)
-    int right_pane_width = (int)width - left_pane_width_px;
-
-    // Clamp our right pane's width to a minimum of 1
-    right_pane_width = right_pane_width > 1 ? right_pane_width: 1;
-
-    right_pane_->Resize((uint32_t)right_pane_width, height);
-
-    left_pane_->MoveTo(0, 0);
-    right_pane_->MoveTo(left_pane_width_px, 0);
   }
 
   ///

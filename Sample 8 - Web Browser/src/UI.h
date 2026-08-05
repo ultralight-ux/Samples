@@ -20,12 +20,9 @@ class UI : public WindowListener,
  public:
   UI(RefPtr<Window> window);
   ~UI();
-               
+
   // Inherited from WindowListener
-  virtual bool OnKeyEvent(const ultralight::KeyEvent& evt) override;
-  virtual bool OnMouseEvent(const ultralight::MouseEvent& evt) override;
   virtual void OnClose(ultralight::Window* window) override;
-  virtual void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override;
 
   // Inherited from LoadListener
   virtual void OnDOMReady(View* caller, uint64_t frame_id,
@@ -61,23 +58,15 @@ protected:
   void SetCursor(Cursor cursor);
 
   Tab* active_tab() { return tabs_.empty() ? nullptr : tabs_[active_tab_id_].get(); }
-               
-  RefPtr<View> view() { return overlay_->view(); }
+
+  RefPtr<View> view() { return panel_->view(); }
 
   RefPtr<Window> window_;
-  RefPtr<Overlay> overlay_;
-  int ui_height_;
-  int tab_height_;
-  float scale_;
+  RefPtr<Panel> panel_;
 
   std::map<uint64_t, std::unique_ptr<Tab>> tabs_;
   uint64_t active_tab_id_ = 0;
   uint64_t tab_id_counter_ = 0;
-  Cursor cur_cursor_;
-  bool is_resizing_inspector_;
-  bool is_over_inspector_resize_drag_handle_;
-  int inspector_resize_begin_height_;
-  int inspector_resize_begin_mouse_y_;
 
   JSFunction updateBack;
   JSFunction updateForward;

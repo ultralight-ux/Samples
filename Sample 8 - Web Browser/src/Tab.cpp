@@ -3,107 +3,47 @@
 #include <iostream>
 #include <string>
 
-#define INSPECTOR_DRAG_HANDLE_HEIGHT 10
-
-Tab::Tab(UI* ui, uint64_t id, uint32_t width, uint32_t height, int x, int y) 
-  : ui_(ui), id_(id), container_width_(width), container_height_(height) {
-  overlay_ = Overlay::Create(ui->window_, width, height, x, y);
+Tab::Tab(UI* ui, uint64_t id, bool hidden)
+  : ui_(ui), id_(id) {
+  ///
+  /// Each tab is a column beneath the UI strip: the page content panel, plus an inspector
+  /// panel when the inspector is open. Marking the column resizable lets the user drag the
+  /// divider between page and inspector. Only the active tab's column is shown.
+  ///
+  container_ = ui->window()->layout()->AddColumn({ .resizable = true, .hidden = hidden });
+  panel_ = container_->AddPanel();
   view()->set_view_listener(this);
   view()->set_load_listener(this);
 }
 
 Tab::~Tab() {
-  view()->set_view_listener(nullptr);
-  view()->set_load_listener(nullptr);
+  RefPtr<View> content_view = panel_->view();
+  if (content_view) {
+    content_view->set_view_listener(nullptr);
+    content_view->set_load_listener(nullptr);
+  }
+
+  // Handles are identity, not lifetime: dropping them would leave the tab's column in the
+  // window's layout, so remove it explicitly (a benign no-op after the window closes).
+  ui_->window()->layout()->Remove(container_);
 }
 
 void Tab::Show() {
-  overlay_->Show();
-  overlay_->Focus();
-
-  if (inspector_overlay_)
-    inspector_overlay_->Show();
+  container_->Show();
+  panel_->Focus();
 }
 
 void Tab::Hide() {
-  overlay_->Hide();
-  overlay_->Unfocus();
-
-  if (inspector_overlay_)
-    inspector_overlay_->Hide();
+  container_->Hide();
 }
 
 void Tab::ToggleInspector() {
-  if (!inspector_overlay_) {
+  if (!inspector_panel_) {
     view()->CreateLocalInspectorView();
+  } else if (inspector_panel_->is_hidden()) {
+    inspector_panel_->Show();
   } else {
-    if (inspector_overlay_->is_hidden()) {
-      inspector_overlay_->Show();
-    } else {
-      inspector_overlay_->Hide();
-    }
-  }
-
-  // Force resize to update layout
-}
-
-
-bool Tab::IsInspectorShowing() const {
-  if (!inspector_overlay_)
-    return false;
-
-  return !inspector_overlay_->is_hidden();
-}
-
-IntRect Tab::GetInspectorResizeDragHandle() const {
-  if (!IsInspectorShowing())
-    return IntRect::MakeEmpty();
-
-  int drag_handle_height_px = (uint32_t)std::round(INSPECTOR_DRAG_HANDLE_HEIGHT * ui_->window()->scale());
-
-  // This drag handle should span the width of the UI and be centered vertically at the boundary between
-  // the page overlay and inspector overlay.
-
-  int drag_handle_x = (int)inspector_overlay_->x();
-  int drag_handle_y = (int)inspector_overlay_->y() - drag_handle_height_px / 2;
-
-  return { drag_handle_x, drag_handle_y, drag_handle_x + (int)inspector_overlay_->width(),
-           drag_handle_y + drag_handle_height_px };
-}
-
-int Tab::GetInspectorHeight() const {
-  if (inspector_overlay_)
-    return inspector_overlay_->height();
-
-  return 0;
-}
-
-void Tab::SetInspectorHeight(int height) {
-  if (height > 2) {
-    inspector_overlay_->Resize(inspector_overlay_->width(), height);
-
-    // Trigger a resize to perform re-layout / re-size of content overlay
-    Resize(container_width_, container_height_);
-  }
-}
-
-void Tab::Resize(uint32_t width, uint32_t height) {
-  container_width_ = width;
-  container_height_ = height;
-
-  uint32_t content_height = container_height_;
-  if (inspector_overlay_ && !inspector_overlay_->is_hidden()) {
-    content_height -= inspector_overlay_->height();
-  }
-  
-  if (content_height < 1)
-    content_height = 1;
-
-  overlay_->Resize(container_width_, content_height);
-
-  if (inspector_overlay_ && !inspector_overlay_->is_hidden()) {
-    inspector_overlay_->MoveTo(0, overlay_->y() + overlay_->height());
-    inspector_overlay_->Resize(container_width_, inspector_overlay_->height());
+    inspector_panel_->Hide();
   }
 }
 
@@ -133,16 +73,16 @@ RefPtr<View> Tab::OnCreateChildView(ultralight::View* caller,
 
 RefPtr<View> Tab::OnCreateInspectorView(ultralight::View* caller, bool is_local,
                                          const String& inspected_url) {
-  if (inspector_overlay_)
+  if (inspector_panel_)
     return nullptr;
 
-  inspector_overlay_ = Overlay::Create(ui_->window_, container_width_, container_height_ / 2, 0, 0);
+  ///
+  /// Dock the inspector under the page as a second panel in this tab's resizable column;
+  /// the engine provides the divider between them.
+  ///
+  inspector_panel_ = container_->AddPanel({ .size = "50%" });
 
-  // Force resize to update layout
-  Resize(container_width_, container_height_);
-  inspector_overlay_->Show();
-
-  return inspector_overlay_->view();
+  return inspector_panel_->view();
 }
 
 void Tab::OnBeginLoading(View* caller, uint64_t frame_id, bool is_main_frame, const String& url) {
@@ -156,7 +96,7 @@ void Tab::OnFinishLoading(View* caller, uint64_t frame_id, bool is_main_frame, c
 void Tab::OnFailLoading(View* caller, uint64_t frame_id, bool is_main_frame, const String& url,
   const String& description, const String& error_domain, int error_code) {
   if (is_main_frame) {
-    char error_code_str[16]; 
+    char error_code_str[16];
     sprintf(error_code_str,"%d", error_code);
 
     String html_string = "<html><head><style>";

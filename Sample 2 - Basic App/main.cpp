@@ -1,6 +1,5 @@
 #include <AppCore/App.h>
 #include <AppCore/Window.h>
-#include <AppCore/Overlay.h>
 
 using namespace ultralight;
 
@@ -26,7 +25,7 @@ class MyApp : public WindowListener,
               public ViewListener {
   RefPtr<App> app_;
   RefPtr<Window> window_;
-  RefPtr<Overlay> overlay_;
+  RefPtr<Panel> panel_;
 public:
   MyApp() {
     ///
@@ -41,11 +40,11 @@ public:
     /// Create our Window.
     ///
     /// This command creates a native platform window and shows it immediately.
-    /// 
-    /// The window's size (900 by 600) is in virtual device coordinates, the actual size in pixels
-    /// is automatically determined by the monitor's DPI.
     ///
-    window_ = Window::Create(app_->main_monitor(), 900, 600, false, kWindowFlags_Titled);
+    /// The window's size (900 by 600) is in DPI-independent logical pixels; the actual size in
+    /// pixels is automatically determined by the monitor's DPI.
+    ///
+    window_ = Window::Create(app_->main_monitor(), 900, 600, false, WindowFlags::Titled);
 
     ///
     /// Set the title of our window.
@@ -53,20 +52,21 @@ public:
     window_->SetTitle("Ultralight Sample 2 - Basic App");
 
     ///
-    /// Create a web-content overlay that spans the entire window.
+    /// Add a web-content panel that spans the entire window.
     ///
-    /// You can create multiple overlays per window, each overlay has its own View which can be
-    /// used to load and display web-content.
+    /// Each window has its own layout tree; a bare AddPanel() fills the window and tracks its
+    /// size automatically. Each panel has its own View which can be used to load and display
+    /// web-content.
     ///
-    /// AppCore automatically manages focus, keyboard/mouse input, and GPU painting for each active
-    /// overlay. Destroying the overlay will remove it from the window.
+    /// AppCore automatically manages focus, keyboard/mouse input, and GPU painting for each
+    /// panel. Removing the panel from the layout tree will remove it from the window.
     ///
-    overlay_ = Overlay::Create(window_, window_->width(), window_->height(), 0, 0);
+    panel_ = window_->AddPanel();
 
     ///
-    /// Load a local HTML file into our overlay's View
+    /// Load a local HTML file into our panel's View
     ///
-    overlay_->view()->LoadURL("file:///page.html");
+    panel_->view()->LoadURL("file:///page.html");
 
     ///
     /// Register our MyApp instance as a WindowListener so we can handle the Window's OnClose event
@@ -78,14 +78,14 @@ public:
     /// Register our MyApp instance as a ViewListener so we can handle the View's OnChangeCursor
     /// event below.
     ///
-    overlay_->view()->set_view_listener(this);
+    panel_->view()->set_view_listener(this);
   }
 
   virtual ~MyApp() {}
 
   ///
   /// Inherited from WindowListener, called when the Window is closed.
-  /// 
+  ///
   /// We exit the application when the window is closed.
   ///
   virtual void OnClose(ultralight::Window* window) override {
@@ -94,10 +94,10 @@ public:
 
   ///
   /// Inherited from WindowListener, called when the Window is resized.
-  /// 
+  ///
   /// (Not used in this sample)
   ///
-  virtual void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override {}
+  virtual void OnResize(ultralight::Window* window, double width, double height) override {}
 
   ///
   /// Inherited from ViewListener, called when the Cursor changes.

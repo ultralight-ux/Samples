@@ -1,6 +1,5 @@
 #include <AppCore/App.h>
 #include <AppCore/Window.h>
-#include <AppCore/Overlay.h>
 #include <AppCore/JSHelpers.h>
 #include <memory>
 
@@ -18,32 +17,30 @@ const char* htmlString();
 class HTMLWindow : public WindowListener,
                    public ViewListener {
   RefPtr<Window> window_;
-  RefPtr<Overlay> overlay_;
+  RefPtr<Panel> panel_;
 public:
   HTMLWindow(const char* title, const char* url, int x, int y, int width, int height) {
     window_ = Window::Create(App::instance()->main_monitor(), width, height, false,
-      kWindowFlags_Titled | kWindowFlags_Resizable | kWindowFlags_Hidden);
+      WindowFlags::Titled | WindowFlags::Resizable | WindowFlags::Hidden);
     window_->MoveTo(x, y);
     window_->SetTitle(title);
     window_->Show();
     window_->set_listener(this);
 
-    overlay_ = Overlay::Create(window_, window_->width(), window_->height(), 0, 0);
-    overlay_->view()->LoadURL(url);
-    overlay_->view()->set_view_listener(this);
+    /// Each window has its own layout tree; a bare AddPanel() fills the window and tracks its
+    /// size automatically.
+    panel_ = window_->AddPanel();
+    panel_->view()->LoadURL(url);
+    panel_->view()->set_view_listener(this);
   }
 
-  inline RefPtr<View> view() { return overlay_->view(); }
+  inline RefPtr<View> view() { return panel_->view(); }
   inline RefPtr<Window> window() { return window_; }
-  inline RefPtr<Overlay> overlay() { return overlay_; }
+  inline RefPtr<Panel> panel() { return panel_; }
 
   virtual void OnClose(ultralight::Window* window) override {
     // We quit the application when any of the windows are closed.
     App::instance()->Quit();
-  }
-
-  virtual void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override {
-    overlay_->Resize(width, height);
   }
 
   virtual void OnChangeCursor(ultralight::View* caller, ultralight::Cursor cursor) override {

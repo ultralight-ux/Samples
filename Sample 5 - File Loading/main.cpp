@@ -1,6 +1,5 @@
 #include <AppCore/App.h>
 #include <AppCore/Window.h>
-#include <AppCore/Overlay.h>
 #include <AppCore/JSHelpers.h>
 
 using namespace ultralight;
@@ -37,7 +36,7 @@ using namespace ultralight;
 class MyApp : public WindowListener {
   RefPtr<App> app_;
   RefPtr<Window> window_;
-  RefPtr<Overlay> overlay_;
+  RefPtr<Panel> panel_;
 public:
   MyApp() {
     ///
@@ -48,7 +47,7 @@ public:
     ///
     /// Create our Window using default window flags.
     ///
-    window_ = Window::Create(app_->main_monitor(), 450, 700, false, kWindowFlags_Titled);
+    window_ = Window::Create(app_->main_monitor(), 450, 700, false, WindowFlags::Titled);
 
     ///
     /// Set the title of our window.
@@ -58,16 +57,16 @@ public:
     window_->set_listener(this);
 
     ///
-    /// Create an Overlay using the same dimensions as our Window.
+    /// Add a panel that fills the entire window.
     ///
-    overlay_ = Overlay::Create(window_, window_->width(), window_->height(), 0, 0);
+    panel_ = window_->AddPanel();
 
     ///
     /// Load a file from the FileSystem.
     ///
     ///  **IMPORTANT**: Make sure `file:///` has three (3) forward slashes.
     ///
-    overlay_->view()->LoadURL("file:///app.html");
+    panel_->view()->LoadURL("file:///app.html");
   }
 
   virtual ~MyApp() {}
@@ -80,13 +79,6 @@ public:
   virtual void OnClose(ultralight::Window* window) override {
     app_->Quit();
   }
-
-  ///
-  /// Inherited from WindowListener, called when the Window is resized.
-  /// 
-  /// (Not used in this sample)
-  ///
-  virtual void OnResize(ultralight::Window* window, uint32_t width, uint32_t height) override {}
 
   void Run() {
     app_->Run();
