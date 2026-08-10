@@ -48,25 +48,25 @@ public:
   }
 };
 
-class EditorListener {
+class SampleEditorListener {
 public:
-  EditorListener() {}
-  virtual ~EditorListener() {}
+  SampleEditorListener() {}
+  virtual ~SampleEditorListener() {}
   virtual void OnUpdateEditor(const ultralight::String& content) = 0;
 };
 
 class EditorWindow : public HTMLWindow,
                      public LoadListener {
-  EditorListener* editor_listener_ = nullptr;
+  SampleEditorListener* editor_listener_ = nullptr;
 public:
   EditorWindow(const char* title, const char* url, int x, int y, int width, int height) 
     : HTMLWindow(title, url, x, y, width, height) {
     view()->set_load_listener(this);
   }
 
-  void set_editor_listener(EditorListener* listener) { editor_listener_ = listener; }
+  void set_editor_listener(SampleEditorListener* listener) { editor_listener_ = listener; }
 
-  EditorListener* editor_listener() { return editor_listener_; }
+  SampleEditorListener* editor_listener() { return editor_listener_; }
 
   ///
   /// Inherited from LoadListener, called when the page has finished parsing
@@ -120,7 +120,7 @@ public:
   }
 };
 
-class MyApp : public EditorListener  {
+class MyApp : public SampleEditorListener  {
   RefPtr<App> app_;
   std::unique_ptr<EditorWindow> editor_window_;
   std::unique_ptr<HTMLWindow> preview_window_;
