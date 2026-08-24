@@ -57,11 +57,6 @@ void Tab::OnChangeURL(View* caller, const String& url) {
 
 void Tab::OnChangeTooltip(View* caller, const String& tooltip) {}
 
-void Tab::OnChangeCursor(View* caller, Cursor cursor) {
-  if (id_ == ui_->active_tab_id_)
-    ui_->SetCursor(cursor);
-}
-
 void Tab::OnAddConsoleMessage(View* caller, const ConsoleMessage& msg) {
 }
 

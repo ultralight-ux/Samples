@@ -29,7 +29,6 @@ public:
   virtual void OnChangeTitle(View* caller, const String& title) override;
   virtual void OnChangeURL(View* caller, const String& url) override;
   virtual void OnChangeTooltip(View* caller, const String& tooltip) override;
-  virtual void OnChangeCursor(View* caller, Cursor cursor) override;
   virtual void OnAddConsoleMessage(View* caller, const ConsoleMessage& msg) override;
   virtual RefPtr<View> OnCreateChildView(ultralight::View* caller,
     const String& opener_url, const String& target_url,

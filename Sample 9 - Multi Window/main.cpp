@@ -14,8 +14,7 @@ const char* htmlString();
 ///
 /// 
 
-class HTMLWindow : public WindowListener,
-                   public ViewListener {
+class HTMLWindow : public WindowListener {
   RefPtr<Window> window_;
   RefPtr<Panel> panel_;
 public:
@@ -31,7 +30,6 @@ public:
     /// size automatically.
     panel_ = window_->AddPanel();
     panel_->view()->LoadURL(url);
-    panel_->view()->set_view_listener(this);
   }
 
   inline RefPtr<View> view() { return panel_->view(); }
@@ -41,10 +39,6 @@ public:
   virtual void OnClose(ultralight::Window* window) override {
     // We quit the application when any of the windows are closed.
     App::instance()->Quit();
-  }
-
-  virtual void OnChangeCursor(ultralight::View* caller, ultralight::Cursor cursor) override {
-    window_->SetCursor(cursor);
   }
 };
 

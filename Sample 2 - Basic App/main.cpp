@@ -21,8 +21,7 @@ using namespace ultralight;
 /// We will create the simplest possible AppCore application in this sample.
 ///
 
-class MyApp : public WindowListener,
-              public ViewListener {
+class MyApp : public WindowListener {
   RefPtr<App> app_;
   RefPtr<Window> window_;
   RefPtr<Panel> panel_;
@@ -73,12 +72,6 @@ public:
     /// below.
     ///
     window_->set_listener(this);
-
-    ///
-    /// Register our MyApp instance as a ViewListener so we can handle the View's OnChangeCursor
-    /// event below.
-    ///
-    panel_->view()->set_view_listener(this);
   }
 
   virtual ~MyApp() {}
@@ -98,13 +91,6 @@ public:
   /// (Not used in this sample)
   ///
   virtual void OnResize(ultralight::Window* window, double width, double height) override {}
-
-  ///
-  /// Inherited from ViewListener, called when the Cursor changes.
-  ///
-  virtual void OnChangeCursor(ultralight::View* caller, ultralight::Cursor cursor) override {
-    window_->SetCursor(cursor);
-  }
 
   void Run() {
     app_->Run();

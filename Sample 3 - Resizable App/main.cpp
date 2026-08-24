@@ -33,8 +33,7 @@ using namespace ultralight;
 /// We'll also mark the split resizable, which puts a draggable divider between the two panes.
 ///
 
-class MyApp : public WindowListener,
-              public ViewListener {
+class MyApp : public WindowListener {
   RefPtr<App> app_;
   RefPtr<Window> window_;
   RefPtr<Panel> left_pane_;
@@ -80,13 +79,6 @@ public:
     /// event below.
     ///
     window_->set_listener(this);
-
-    ///
-    /// Register our MyApp instance as a ViewListener so we can handle the Views' OnChangeCursor
-    /// event below.
-    ///
-    left_pane_->view()->set_view_listener(this);
-    right_pane_->view()->set_view_listener(this);
   }
 
   virtual ~MyApp() {}
@@ -98,13 +90,6 @@ public:
   ///
   virtual void OnClose(ultralight::Window* window) override {
     app_->Quit();
-  }
-
-  ///
-  /// Inherited from ViewListener, called when the Cursor changes.
-  ///
-  virtual void OnChangeCursor(ultralight::View* caller, ultralight::Cursor cursor) override {
-    window_->SetCursor(cursor);
   }
 
   void Run() {

@@ -46,6 +46,14 @@ macro(add_console_app APP_NAME)
     INSTALL(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/assets/" DESTINATION "${INSTALL_PATH}/assets" OPTIONAL)
 endmacro ()
 
+# add_app(<name> <sources>...)
+#
+# Two variables set in the calling scope change the app: NEEDS_INSPECTOR
+# stages the Web Inspector assets next to the binary, and LINK_PLATFORM links
+# the Ultralight::Platform reference implementations (SDK/platform) for apps
+# that drive the reference GPU drivers, contexts, or services directly instead
+# of through App::Create. LINK_PLATFORM does nothing when that target is not
+# defined.
 macro(add_app APP_NAME)
     include_directories("${ULTRALIGHT_INCLUDE_DIR}")
     link_directories("${ULTRALIGHT_LIBRARY_DIR}")
@@ -60,6 +68,10 @@ macro(add_app APP_NAME)
 
     # Always link to the C++ standard library
     set_target_properties(${APP_NAME} PROPERTIES LINKER_LANGUAGE CXX)
+
+    if (LINK_PLATFORM AND TARGET Ultralight::Platform)
+        target_link_libraries(${APP_NAME} PRIVATE Ultralight::Platform)
+    endif ()
 
     set(INSTALL_PATH "${INSTALL_DIR}/${APP_NAME}")
 

@@ -12,7 +12,6 @@ UI::UI(RefPtr<Window> window) : window_(window) {
   g_ui = this;
 
   view()->set_load_listener(this);
-  view()->set_view_listener(this);
   view()->LoadURL("file:///ui.html");
 }
 
@@ -20,7 +19,6 @@ UI::~UI() {
   // The panel's View is gone once the window closed (handles sever); guard the detach.
   if (RefPtr<View> ui_view = view()) {
     ui_view->set_load_listener(nullptr);
-    ui_view->set_view_listener(nullptr);
   }
   g_ui = nullptr;
 }
@@ -215,9 +213,4 @@ void UI::SetCanGoForward(bool can_go_forward) {
 void UI::SetURL(const ultralight::String& url) {
   RefPtr<JSContext> lock(view()->LockJSContext());
   updateURL({ url });
-}
-
-void UI::SetCursor(ultralight::Cursor cursor) {
-  if (App::instance())
-    window_->SetCursor(cursor);
 }
