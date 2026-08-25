@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Native Look and Feel</title>
+    <style>
+      /* Ultralight sample design tokens, v2 (native-adaptive, material-backed).
+         The window renders a native backdrop material behind this page, so there is no
+         opaque ground here: the body stays transparent and every surface is a translucent
+         tint the material shows through. */
+      :root {
+        --panel: rgba(255, 255, 255, 0.55);
+        --panel-2: rgba(255, 255, 255, 0.4);
+        --text: #1b2030;
+        --muted: #565d73;
+        --border: rgba(27, 32, 48, 0.12);
+        --accent: #3b6cf6;  --accent-2: #7c3aed;
+        --ok: #18a058;  --warn: #e8a317;  --bad: #e5484d;
+        --sel: rgba(59, 108, 246, 0.12);
+        --shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+        --shadow-pop: 0 12px 28px rgba(16, 24, 40, 0.16);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --panel: rgba(23, 26, 35, 0.55);
+          --panel-2: rgba(23, 26, 35, 0.4);
+          --text: #e6e8ef;  --muted: #9aa1b5;
+          --border: rgba(255, 255, 255, 0.1);
+          --accent: #4f8cff;  --accent-2: #a78bfa;
+          --ok: #3ecf8e;  --warn: #ffb648;  --bad: #ff5c6c;
+          --sel: rgba(79, 140, 255, 0.18);
+          --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+          --shadow-pop: 0 14px 36px rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: transparent;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        color: var(--text);
+        font-family: sans-serif;
+        font-size: 13px;
+        line-height: 1.4;
+        cursor: default;
+        -webkit-user-select: none;
+        overflow: hidden;
+      }
+
+      /* The title bar is ours: `app-region: drag` makes it move the window and gives
+         double-click the platform title-bar action. Anything interactive inside it opts
+         back out with `app-region: no-drag`. */
+      .titlebar {
+        display: flex;
+        align-items: center;
+        height: 46px;
+        flex-shrink: 0;
+        border-bottom: 1px solid var(--border);
+        app-region: drag;
+        transition: opacity 160ms ease-out;
+      }
+
+      /* Native code measures the macOS traffic lights and sets --controls-clearance so
+         our chrome lays out around them; elsewhere the clearance stays zero. */
+      .titlebar .clearance {
+        width: var(--controls-clearance, 14px);
+        flex-shrink: 0;
+      }
+
+      /* Match the platform's title treatment: 13px semibold in the full label color
+         (small uppercase micro-labels read as web UI, not window chrome). */
+      .titlebar .app-title {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--text);
+      }
+
+      .is-inactive .titlebar { opacity: 0.5; }
+
+      .titlebar .spacer { flex: 1; }
+
+      .menu-pill {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 12px;
+        margin-right: 12px;
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        background: var(--panel-2);
+        font-weight: 600;
+        app-region: no-drag;
+        transition: background-color 120ms ease-out, border-color 120ms ease-out;
+      }
+
+      .menu-pill:hover { background: var(--sel); border-color: var(--accent); }
+
+      .menu-pill svg { display: block; }
+
+      /* App-drawn caption buttons (hidden on macOS, where the native traffic lights
+         remain). Their footprints are registered as native hit-test regions, so the OS
+         performs the actions; hover still reaches the page for styling. */
+      .window-buttons {
+        display: flex;
+        align-self: stretch;
+        app-region: no-drag;
+      }
+
+      .native-controls .window-buttons { display: none; }
+
+      .win-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 46px;
+        color: var(--muted);
+        transition: background-color 120ms ease-out, color 120ms ease-out;
+      }
+
+      .win-btn:hover { background: var(--sel); color: var(--text); }
+      .win-btn.close:hover { background: var(--bad); color: #ffffff; }
+
+      .win-btn svg { display: block; }
+
+      /* The maximize button swaps its glyph while the window is maximized; native code
+         toggles the class from WindowListener::OnWindowStateChanged. */
+      .win-btn .restore { display: none; }
+      .is-maximized .win-btn .maximize { display: none; }
+      .is-maximized .win-btn .restore { display: block; }
+
+      main {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .card {
+        width: 460px;
+        padding: 32px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+      }
+
+      .kicker {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 8px 0 12px;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      p {
+        margin: 0 0 16px;
+        color: var(--muted);
+      }
+
+      ul {
+        margin: 0 0 20px;
+        padding: 0 0 0 18px;
+        color: var(--muted);
+      }
+
+      li { margin-bottom: 6px; }
+
+      li strong { color: var(--text); font-weight: 600; }
+
+      .btn {
+        display: inline-block;
+        padding: 9px 18px;
+        font: inherit;
+        font-weight: 600;
+        color: #ffffff;
+        background: var(--accent);
+        border: none;
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+      .btn:active { transform: translateY(0); box-shadow: var(--shadow); }
+    </style>
+  </head>
+  <body>
+    <div class="titlebar">
+      <div class="clearance"></div>
+      <div class="app-title">Native Look and Feel</div>
+      <div class="spacer"></div>
+      <div class="menu-pill" id="menu-button">
+        Appearance
+        <svg width="8" height="5" viewBox="0 0 8 5">
+          <path d="M1 1 L4 4 L7 1" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        </svg>
+      </div>
+      <div class="window-buttons">
+        <div class="win-btn" id="minimize">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M0 5 H10" stroke="currentColor" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="win-btn" id="maximize">
+          <svg class="maximize" width="10" height="10" viewBox="0 0 10 10">
+            <rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor"/>
+          </svg>
+          <svg class="restore" width="10" height="10" viewBox="0 0 10 10">
+            <path d="M2.5 2.5 V0.5 H9.5 V7.5 H7.5" fill="none" stroke="currentColor"/>
+            <rect x="0.5" y="2.5" width="7" height="7" fill="none" stroke="currentColor"/>
+          </svg>
+        </div>
+        <div class="win-btn close" id="close">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M0 0 L10 10 M10 0 L0 10" stroke="currentColor" stroke-width="1.1"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <main>
+      <div class="card">
+        <div class="kicker">Ultralight &middot; Native Look and Feel</div>
+        <h1>Drawn by you, run by the OS.</h1>
+        <p>
+          Every pixel of this window is HTML over a native backdrop material, and the OS
+          still owns the frame. Try it:
+        </p>
+        <ul>
+          <li><strong>Drag</strong> the title bar, or double-click it to maximize.</li>
+          <li><strong>Resize</strong> from any edge; snap gestures work too.</li>
+          <li><strong>Switch themes</strong> from the Appearance menu, or just change
+            your OS theme and watch the page follow.</li>
+        </ul>
+        <button class="btn" id="dialog-button">Show a message box</button>
+      </div>
+    </main>
+  </body>
+</html>

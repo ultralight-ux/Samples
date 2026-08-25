@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>File Loading</title>
+    <style>
+      html, body {
+        margin: 0;
+        height: 100%;
+      }
+
+      /* The engine resolves the generic font families below to each platform's
+         default browser fonts (eg, Segoe UI on Windows, Helvetica on macOS). */
+      body {
+        background: #241b2e;
+        color: #ffffff;
+        font-family: sans-serif;
+        cursor: default;
+        -webkit-user-select: none;
+        overflow: hidden;
+      }
+
+      /* The photo ground. Like every other byte on this page, background.jpg
+         is loaded through the FileSystem API. The slight overscan leaves room
+         for the mouse parallax to drift the photo without exposing an edge.
+         Royalty free photo from: https://unsplash.com/photos/DYGNNwkfx_Y */
+      #photo {
+        position: fixed;
+        inset: 0;
+        background: url('background.jpg') no-repeat center center;
+        background-size: cover;
+        transform: scale(1.1);
+      }
+
+      .clock {
+        position: fixed;
+        top: 72px;
+        left: 0;
+        right: 0;
+        text-align: center;
+        text-shadow: 0 2px 14px rgba(60, 26, 78, 0.3);
+      }
+
+      #date {
+        font-size: 20px;
+        font-weight: 400;
+      }
+
+      /* Tabular numerals give every digit the same width, so the readout
+         stays put as the time changes. */
+      #time {
+        font-size: 108px;
+        font-weight: 200;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      #period {
+        font-size: 26px;
+        font-weight: 300;
+        margin-left: 8px;
+      }
+
+      /* The frosted glass card: backdrop-filter samples the page content
+         behind the element (here, the photo) and blurs it live, so the card
+         keeps reading as glass while the photo drifts beneath it. */
+      .card {
+        position: fixed;
+        left: 28px;
+        right: 28px;
+        bottom: 52px;
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 15px 18px;
+        background: rgba(24, 16, 34, 0.38);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 12px;
+        -webkit-backdrop-filter: blur(16px) saturate(1.3);
+        backdrop-filter: blur(16px) saturate(1.3);
+        box-shadow: 0 12px 28px rgba(20, 10, 34, 0.25);
+      }
+
+      .card-icon {
+        flex-shrink: 0;
+      }
+
+      .card-label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.65);
+      }
+
+      .card-title {
+        margin: 3px 0 2px;
+        font-family: monospace;
+        font-size: 13px;
+        font-weight: 600;
+      }
+
+      .card-body {
+        font-size: 12px;
+        line-height: 1.45;
+        color: rgba(255, 255, 255, 0.75);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="photo"></div>
+
+    <div class="clock">
+      <div id="date"></div>
+      <div><span id="time"></span><span id="period"></span></div>
+    </div>
+
+    <div class="card">
+      <svg class="card-icon" viewBox="0 0 24 24" width="30" height="30">
+        <rect x="3" y="3" width="18" height="18" rx="4.5"
+              fill="none" stroke="rgba(255, 255, 255, 0.9)" stroke-width="1.6"/>
+        <circle cx="9" cy="9.2" r="1.8" fill="rgba(255, 255, 255, 0.9)"/>
+        <path d="M 5.6 16.8 L 10.4 12 L 13.6 15.2 L 15.8 13 L 18.4 15.6"
+              fill="none" stroke="rgba(255, 255, 255, 0.9)" stroke-width="1.6"
+              stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div>
+        <div class="card-label">File System</div>
+        <div class="card-title">background.jpg</div>
+        <div class="card-body">
+          Served through the FileSystem API, like every other byte on this page.
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const dateEl = document.getElementById('date');
+      const timeEl = document.getElementById('time');
+      const periodEl = document.getElementById('period');
+
+      // The locale formats the time; the AM/PM marker (absent in 24-hour
+      // locales) is split out so it can render smaller than the digits.
+      function updateClock() {
+        const now = new Date();
+        const parts = new Intl.DateTimeFormat([], {
+          hour: 'numeric', minute: '2-digit'
+        }).formatToParts(now);
+        const period = parts.find((part) => part.type === 'dayPeriod');
+        timeEl.textContent = parts.filter((part) => part.type !== 'dayPeriod')
+                                  .map((part) => part.value).join('').trim();
+        periodEl.textContent = period ? period.value : '';
+        dateEl.textContent = now.toLocaleDateString([], {
+          weekday: 'long', month: 'long', day: 'numeric'
+        });
+      }
+
+      updateClock();
+      setInterval(updateClock, 1000);
+
+      const photo = document.getElementById('photo');
+      const drift = { x: 0, y: 0 };   // where the photo is now
+      const target = { x: 0, y: 0 };  // where the pointer is asking it to go
+
+      // The photo drifts opposite the pointer, up to 16px, so it reads as a
+      // layer sitting behind the clock and the glass.
+      function handleMouseMove(event) {
+        target.x = 16 * (window.innerWidth / 2 - event.clientX) / (window.innerWidth / 2);
+        target.y = 16 * (window.innerHeight / 2 - event.clientY) / (window.innerHeight / 2);
+      }
+
+      // Ease a fraction of the way toward the target each frame; the photo
+      // glides rather than snapping to the pointer.
+      function moveBackground() {
+        drift.x += (target.x - drift.x) / 6;
+        drift.y += (target.y - drift.y) / 6;
+        photo.style.transform = `translate(${drift.x}px, ${drift.y}px) scale(1.1)`;
+        requestAnimationFrame(moveBackground);
+      }
+
+      window.addEventListener('mousemove', handleMouseMove);
+      requestAnimationFrame(moveBackground);
+    </script>
+  </body>
+</html>

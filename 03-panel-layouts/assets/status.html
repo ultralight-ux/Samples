@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Status</title>
+    <style>
+      /* Ultralight sample design tokens, v2 (native-adaptive) */
+      :root {
+        --bg: #eef0f5;         /* window ground */
+        --panel: #ffffff;      /* card / pane surface */
+        --panel-2: #f6f7fa;    /* inset surface (inputs, code, table heads) */
+        --text: #1b2030;
+        --muted: #6b7186;
+        --border: #e1e4ec;
+        --accent: #3b6cf6;     /* primary action / selection */
+        --accent-2: #7c3aed;   /* gradient partner, secondary series */
+        --ok: #18a058;  --warn: #e8a317;  --bad: #e5484d;
+        --sel: rgba(59, 108, 246, 0.12);   /* selection wash + focus ring */
+        --shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+        --shadow-pop: 0 12px 28px rgba(16, 24, 40, 0.16);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1117;  --panel: #171a23;  --panel-2: #1d2130;
+          --text: #e6e8ef;  --muted: #8b91a6;  --border: #2a2f40;
+          --accent: #4f8cff;  --accent-2: #a78bfa;
+          --ok: #3ecf8e;  --warn: #ffb648;  --bad: #ff5c6c;
+          --sel: rgba(79, 140, 255, 0.18);
+          --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+          --shadow-pop: 0 14px 36px rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      /* Each pane claims its own accent so splits and hides read at a glance. The light value
+         is a deeper amber than the warn token so small text keeps its contrast. */
+      :root { --accent: #a16207; }
+      @media (prefers-color-scheme: dark) {
+        :root { --accent: #ffb648; }
+      }
+
+      html, body {
+        margin: 0;
+        height: 100%;
+      }
+
+      /* The root matches the content pane's ground behind this float, so the card's rounded
+         corners and drop shadow blend into the pane instead of punching a solid rectangle. */
+      html {
+        background: var(--bg);
+      }
+
+      body {
+        display: flex;
+        box-sizing: border-box;
+        padding: 4px 8px 12px;
+        color: var(--text);
+        font-family: sans-serif;
+        font-size: 13px;
+        cursor: default;
+        -webkit-user-select: none;
+        overflow: hidden;
+      }
+
+      .card {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 0 12px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        overflow: hidden;
+      }
+
+      .badge {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 8px;
+        flex-shrink: 0;
+        color: var(--accent);
+        background: color-mix(in srgb, var(--accent) 14%, transparent);
+      }
+
+      .stack {
+        flex: 1;
+        min-width: 0;
+        line-height: 1.3;
+      }
+
+      .row {
+        display: flex;
+        align-items: baseline;
+      }
+
+      .label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--accent);
+      }
+
+      .size {
+        margin-left: auto;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+        white-space: nowrap;
+      }
+
+      .note {
+        color: var(--muted);
+        font-size: 11px;
+      }
+    </style>
+    <script>
+      function update() {
+        document.getElementById('size').textContent =
+            window.innerWidth + ' × ' + window.innerHeight + ' px';
+      }
+      addEventListener('DOMContentLoaded', update);
+      addEventListener('resize', update);
+    </script>
+  </head>
+  <body>
+    <div class="card">
+      <div class="badge">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="12.5" y="12.5" width="8.5" height="7.5" rx="1.5" fill="currentColor"
+                opacity="0.18" stroke="none"/>
+          <rect x="3" y="4" width="18" height="16" rx="2.5"/>
+          <rect x="12.5" y="12.5" width="8.5" height="7.5" rx="1.5"/>
+        </svg>
+      </div>
+      <div class="stack">
+        <div class="row">
+          <div class="label">Status</div>
+          <div class="size" id="size"></div>
+        </div>
+        <div class="note">Anchored to the window's bottom-right corner.</div>
+      </div>
+    </div>
+  </body>
+</html>

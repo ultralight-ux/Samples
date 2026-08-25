@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>OpenGL Integration</title>
+    <style>
+      /* Ultralight sample design tokens, v2 (game-overlay) */
+      :root {
+        --panel: rgba(8, 12, 20, 0.45);          /* glass panel */
+        --panel-solid: rgba(12, 16, 26, 0.85);   /* menu-card tier */
+        --border: rgba(255, 255, 255, 0.14);
+        --text: #f3f4f6;
+        --health: #4ade80;  --armor: #60a5fa;  --stamina: #fbbf24;
+        --team-blue: #3b82f6;  --team-red: #ef4444;
+        --muted: rgba(226, 232, 244, 0.62);
+      }
+
+      html, body {
+        margin: 0;
+        height: 100%;
+      }
+
+      /* All of the scene ground below is painted on <body>. The app's Alt+T
+         shortcut sets the body background to transparent, so the whole
+         backdrop drops away and the host's OpenGL scene shows through. */
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background:
+          radial-gradient(140% 100% at 50% 50%,
+                          transparent 55%, rgba(0, 0, 0, 0.55) 100%),
+          repeating-linear-gradient(0deg,
+                          rgba(148, 178, 255, 0.04) 0px, rgba(148, 178, 255, 0.04) 1px,
+                          transparent 1px, transparent 44px),
+          repeating-linear-gradient(90deg,
+                          rgba(148, 178, 255, 0.04) 0px, rgba(148, 178, 255, 0.04) 1px,
+                          transparent 1px, transparent 44px),
+          radial-gradient(900px 620px at 18% -12%,
+                          rgba(59, 130, 246, 0.26), transparent 65%),
+          radial-gradient(820px 580px at 86% 112%,
+                          rgba(124, 58, 237, 0.24), transparent 65%),
+          linear-gradient(160deg, #0b1020, #05070d 55%, #070b16);
+        color: var(--text);
+        font-family: sans-serif;
+        font-size: 13px;
+        line-height: 1.4;
+        cursor: default;
+        -webkit-user-select: none;
+        overflow: hidden;
+      }
+
+      .card {
+        width: 620px;
+        padding: 26px 30px 22px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: 0 14px 36px rgba(0, 0, 0, 0.5);
+        -webkit-backdrop-filter: blur(12px) saturate(1.3);
+        backdrop-filter: blur(12px) saturate(1.3);
+      }
+
+      .masthead {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+      }
+
+      .intro { flex: 1; }
+
+      .kicker {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 8px 0 10px;
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        text-shadow: 0 0 24px rgba(96, 165, 250, 0.35);
+      }
+
+      .intro p {
+        margin: 0;
+        color: var(--muted);
+      }
+
+      .hero {
+        flex: none;
+        width: 200px;
+        height: 146px;
+      }
+
+      .hero .orbit {
+        fill: none;
+        stroke: rgba(138, 180, 255, 0.3);
+        stroke-width: 1.5;
+      }
+
+      .hero .orbit.dim {
+        stroke: rgba(138, 180, 255, 0.16);
+        stroke-dasharray: 2, 7;
+      }
+
+      /* The one ambient animation on the page: a slow pulse on the hero's
+         floor glow. */
+      @keyframes glow-pulse {
+        0%, 100% { opacity: 0.55; }
+        50%      { opacity: 1; }
+      }
+
+      .hero .glow {
+        animation: glow-pulse 6s ease-in-out infinite;
+      }
+
+      .list {
+        margin-top: 18px;
+        padding: 4px 12px;
+        background: var(--panel);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 12px;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 5px 6px;
+        border-radius: 8px;
+        transition: background-color 160ms ease-out;
+      }
+
+      .row:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+
+      .row + .row {
+        border-top: 1px solid rgba(255, 255, 255, 0.07);
+      }
+
+      .keys {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        min-width: 120px;
+      }
+
+      .plus {
+        font-weight: 600;
+        color: var(--muted);
+      }
+
+      .action {
+        font-weight: 600;
+      }
+
+      .detail {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      /* SVG key caps: a darker base rect reads as the key's side, the face
+         rect sits on top with a gradient and a light stroke for the bevel. */
+      .key {
+        width: 40px;
+        height: 40px;
+        filter: drop-shadow(0 3px 3px rgba(0, 0, 0, 0.45));
+      }
+
+      .key.wide { width: 58px; }
+
+      .key .cap-side { fill: rgba(4, 7, 13, 0.9); }
+
+      .key .cap-face {
+        fill: url(#cap-face-g);
+        stroke: rgba(255, 255, 255, 0.22);
+        stroke-width: 1;
+      }
+
+      /* The engine resolves the generic font families on this page to each
+         platform's default browser fonts (eg, Segoe UI on Windows, Helvetica
+         on macOS). */
+      .key text {
+        font-family: sans-serif;
+        font-size: 15px;
+        font-weight: 600;
+        fill: #eef1f8;
+        text-anchor: middle;
+      }
+
+      .key text.small { font-size: 12px; }
+
+      .key .legend-path {
+        fill: none;
+        stroke: #eef1f8;
+        stroke-width: 2;
+        stroke-linecap: round;
+        stroke-linejoin: round;
+      }
+
+      .hint {
+        margin: 14px 4px 0;
+        font-size: 12px;
+        color: var(--muted);
+        text-align: center;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- Gradients shared by the key caps and the hero art below. -->
+    <svg width="0" height="0" style="position: absolute" aria-hidden="true">
+      <defs>
+        <linearGradient id="cap-face-g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#3a4460"/>
+          <stop offset="1" stop-color="#222a3d"/>
+        </linearGradient>
+        <linearGradient id="tile-face-g" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#4f8cff"/>
+          <stop offset="1" stop-color="#7c3aed"/>
+        </linearGradient>
+        <linearGradient id="tile-flank-g" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#26314a"/>
+          <stop offset="1" stop-color="#141a2a"/>
+        </linearGradient>
+        <radialGradient id="glow-g" cx="0.5" cy="0.5" r="0.5">
+          <stop offset="0" stop-color="#60a5fa" stop-opacity="0.5"/>
+          <stop offset="1" stop-color="#60a5fa" stop-opacity="0"/>
+        </radialGradient>
+      </defs>
+    </svg>
+
+    <div class="card">
+      <div class="masthead">
+        <div class="intro">
+          <div class="kicker">Ultralight &middot; OpenGL Integration</div>
+          <h1>This page is a texture.</h1>
+          <p>
+            Ultralight renders this page into a texture, and the host app draws
+            it as a tile in an OpenGL cover-flow scene. Drive the scene with the
+            shortcuts below.
+          </p>
+        </div>
+
+        <!-- Hero mark: the cover-flow carousel, drawn as vector art. -->
+        <svg class="hero" viewBox="0 0 220 160" aria-hidden="true">
+          <path class="orbit" d="M 6 118 C 60 96, 160 96, 214 118"/>
+          <path class="orbit dim" d="M 20 132 C 75 114, 145 114, 200 132"/>
+          <ellipse class="glow" cx="110" cy="120" rx="84" ry="22" fill="url(#glow-g)"/>
+
+          <!-- Left flank tile and its reflection -->
+          <g transform="translate(14, 30)">
+            <g transform="skewY(-8)">
+              <rect width="50" height="68" rx="6" fill="url(#tile-flank-g)"
+                    stroke="rgba(255, 255, 255, 0.14)"/>
+              <rect x="8" y="10" width="22" height="5" rx="2.5" fill="#ffffff" opacity="0.5"/>
+              <rect x="8" y="21" width="34" height="4" rx="2" fill="#ffffff" opacity="0.25"/>
+              <rect x="8" y="30" width="28" height="4" rx="2" fill="#ffffff" opacity="0.25"/>
+            </g>
+            <g transform="translate(0, 140) scale(1, -1)" opacity="0.08">
+              <g transform="skewY(-8)">
+                <rect width="50" height="68" rx="6" fill="url(#tile-flank-g)"/>
+              </g>
+            </g>
+          </g>
+
+          <!-- Right flank tile and its reflection -->
+          <g transform="translate(156, 30)">
+            <g transform="skewY(8)">
+              <rect width="50" height="68" rx="6" fill="url(#tile-flank-g)"
+                    stroke="rgba(255, 255, 255, 0.14)"/>
+              <rect x="8" y="10" width="22" height="5" rx="2.5" fill="#ffffff" opacity="0.5"/>
+              <rect x="8" y="21" width="34" height="4" rx="2" fill="#ffffff" opacity="0.25"/>
+              <rect x="8" y="30" width="28" height="4" rx="2" fill="#ffffff" opacity="0.25"/>
+            </g>
+            <g transform="translate(0, 140) scale(1, -1)" opacity="0.08">
+              <g transform="skewY(8)">
+                <rect width="50" height="68" rx="6" fill="url(#tile-flank-g)"/>
+              </g>
+            </g>
+          </g>
+
+          <!-- Center tile: a miniature of this welcome page -->
+          <g>
+            <rect x="76" y="18" width="68" height="88" rx="8" fill="url(#tile-face-g)"
+                  stroke="rgba(255, 255, 255, 0.4)"/>
+            <path d="M 98 18 L 122 18 L 90 106 L 78 106 Z" fill="#ffffff" opacity="0.08"/>
+            <rect x="86" y="30" width="30" height="7" rx="3.5" fill="#ffffff" opacity="0.9"/>
+            <rect x="86" y="44" width="48" height="4" rx="2" fill="#ffffff" opacity="0.45"/>
+            <rect x="86" y="53" width="40" height="4" rx="2" fill="#ffffff" opacity="0.45"/>
+            <rect x="86" y="62" width="44" height="4" rx="2" fill="#ffffff" opacity="0.3"/>
+            <rect x="86" y="78" width="12" height="12" rx="3" fill="rgba(255, 255, 255, 0.22)"
+                  stroke="rgba(255, 255, 255, 0.5)"/>
+            <rect x="102" y="78" width="12" height="12" rx="3" fill="rgba(255, 255, 255, 0.22)"
+                  stroke="rgba(255, 255, 255, 0.5)"/>
+            <rect x="118" y="78" width="12" height="12" rx="3" fill="rgba(255, 255, 255, 0.22)"
+                  stroke="rgba(255, 255, 255, 0.5)"/>
+            <g transform="translate(0, 216) scale(1, -1)" opacity="0.1">
+              <rect x="76" y="18" width="68" height="88" rx="8" fill="url(#tile-face-g)"/>
+            </g>
+          </g>
+
+          <!-- Sparkles -->
+          <path d="M 40 14 v 8 M 36 18 h 8" stroke="#9db9ff" stroke-width="1.5"
+                stroke-linecap="round" opacity="0.8"/>
+          <path d="M 190 28 v 6 M 187 31 h 6" stroke="#9db9ff" stroke-width="1.5"
+                stroke-linecap="round" opacity="0.6"/>
+          <path d="M 168 8 v 6 M 165 11 h 6" stroke="#9db9ff" stroke-width="1.5"
+                stroke-linecap="round" opacity="0.5"/>
+          <rect x="25" y="58" width="5" height="5" transform="rotate(45, 27.5, 60.5)"
+                fill="#7c9dff" opacity="0.7"/>
+          <circle cx="60" cy="10" r="1.5" fill="#acc4ff" opacity="0.7"/>
+          <circle cx="205" cy="66" r="1.5" fill="#acc4ff" opacity="0.5"/>
+          <circle cx="10" cy="82" r="1.2" fill="#acc4ff" opacity="0.5"/>
+        </svg>
+      </div>
+
+      <div class="list">
+        <div class="row">
+          <div class="keys">
+            <svg class="key" viewBox="0 0 44 44">
+              <rect class="cap-side" x="1" y="4" width="42" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="42" height="38" rx="9"/>
+              <path class="legend-path" d="M 14 16 c 2.5 -3.5, 5.5 -3.5, 8 0 c 2.5 3.5, 5.5 3.5, 8 0"/>
+              <path class="legend-path" d="M 19 24 l 6 7"/>
+            </svg>
+          </div>
+          <div>
+            <div class="action">Toggle the carousel</div>
+            <div class="detail">Zoom out to the cover-flow view, or zoom back into the current tile.</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="keys">
+            <svg class="key wide" viewBox="0 0 64 44">
+              <rect class="cap-side" x="1" y="4" width="62" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="62" height="38" rx="9"/>
+              <text x="32" y="25" class="small">alt</text>
+            </svg>
+            <span class="plus">+</span>
+            <svg class="key" viewBox="0 0 44 44">
+              <rect class="cap-side" x="1" y="4" width="42" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="42" height="38" rx="9"/>
+              <path class="legend-path" d="M 28 20 H 16 M 21 15 l -5 5 5 5"/>
+            </svg>
+          </div>
+          <div>
+            <div class="action">Go back</div>
+            <div class="detail">Step back through the current tile's history.</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="keys">
+            <svg class="key wide" viewBox="0 0 64 44">
+              <rect class="cap-side" x="1" y="4" width="62" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="62" height="38" rx="9"/>
+              <text x="32" y="25" class="small">alt</text>
+            </svg>
+            <span class="plus">+</span>
+            <svg class="key" viewBox="0 0 44 44">
+              <rect class="cap-side" x="1" y="4" width="42" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="42" height="38" rx="9"/>
+              <path class="legend-path" d="M 16 20 H 28 M 23 15 l 5 5 -5 5"/>
+            </svg>
+          </div>
+          <div>
+            <div class="action">Go forward</div>
+            <div class="detail">Step forward through it again.</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="keys">
+            <svg class="key wide" viewBox="0 0 64 44">
+              <rect class="cap-side" x="1" y="4" width="62" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="62" height="38" rx="9"/>
+              <text x="32" y="25" class="small">alt</text>
+            </svg>
+            <span class="plus">+</span>
+            <svg class="key" viewBox="0 0 44 44">
+              <rect class="cap-side" x="1" y="4" width="42" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="42" height="38" rx="9"/>
+              <text x="22" y="25">D</text>
+            </svg>
+          </div>
+          <div>
+            <div class="action">Open a new tile</div>
+            <div class="detail">Adds a tile loading DuckDuckGo and slides over to it.</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="keys">
+            <svg class="key wide" viewBox="0 0 64 44">
+              <rect class="cap-side" x="1" y="4" width="62" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="62" height="38" rx="9"/>
+              <text x="32" y="25" class="small">alt</text>
+            </svg>
+            <span class="plus">+</span>
+            <svg class="key" viewBox="0 0 44 44">
+              <rect class="cap-side" x="1" y="4" width="42" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="42" height="38" rx="9"/>
+              <text x="22" y="25">X</text>
+            </svg>
+          </div>
+          <div>
+            <div class="action">Close the current tile</div>
+            <div class="detail">Removes it from the carousel (the last tile always stays open).</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="keys">
+            <svg class="key wide" viewBox="0 0 64 44">
+              <rect class="cap-side" x="1" y="4" width="62" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="62" height="38" rx="9"/>
+              <text x="32" y="25" class="small">alt</text>
+            </svg>
+            <span class="plus">+</span>
+            <svg class="key" viewBox="0 0 44 44">
+              <rect class="cap-side" x="1" y="4" width="42" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="42" height="38" rx="9"/>
+              <text x="22" y="25">T</text>
+            </svg>
+          </div>
+          <div>
+            <div class="action">Make this page transparent</div>
+            <div class="detail">Clears the page background so the OpenGL scene shows through the tile.</div>
+          </div>
+        </div>
+        <div class="row">
+          <div class="keys">
+            <svg class="key wide" viewBox="0 0 64 44">
+              <rect class="cap-side" x="1" y="4" width="62" height="39" rx="9"/>
+              <rect class="cap-face" x="1" y="1" width="62" height="38" rx="9"/>
+              <text x="32" y="25" class="small">esc</text>
+            </svg>
+          </div>
+          <div>
+            <div class="action">Quit</div>
+            <div class="detail">Exits the sample.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="hint">In the carousel view, drag with the mouse to flick between tiles.</div>
+    </div>
+  </body>
+</html>

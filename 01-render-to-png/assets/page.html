@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Render to PNG</title>
+    <style>
+      /* This page is rendered once, headless, and saved to a PNG (see the sample
+         code), so everything on it is static-- the result is the same every run. */
+      html, body {
+        margin: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+
+      /* The engine resolves the generic font families below to each platform's
+         default browser fonts (eg, Segoe UI on Windows, Helvetica on macOS). */
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: sans-serif;
+        color: #f2f5ff;
+        background:
+          radial-gradient(2px 2px at 76% 20%, rgba(255, 255, 255, 0.35), transparent 90%),
+          radial-gradient(2px 2px at 90% 44%, rgba(191, 224, 255, 0.3), transparent 90%),
+          radial-gradient(2px 2px at 66% 82%, rgba(185, 160, 255, 0.3), transparent 90%),
+          radial-gradient(2px 2px at 94% 12%, rgba(255, 255, 255, 0.22), transparent 90%),
+          radial-gradient(2px 2px at 58% 8%, rgba(191, 224, 255, 0.25), transparent 90%),
+          radial-gradient(700px 420px at 22% 38%, rgba(79, 140, 255, 0.18), transparent 65%),
+          radial-gradient(620px 420px at 82% 72%, rgba(167, 139, 250, 0.16), transparent 70%),
+          linear-gradient(135deg, #0d1122, #090b14 55%, #11142a);
+      }
+
+      /* A soft diagonal sheen keeps the large dark field from reading flat. */
+      .sheen {
+        position: fixed;
+        inset: 0;
+        background: linear-gradient(115deg, transparent 32%,
+                    rgba(108, 176, 255, 0.05) 46%, transparent 62%);
+      }
+
+      /* A hairline frame gives the render a finished, printed-poster edge. */
+      .frame {
+        position: fixed;
+        inset: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 10px;
+      }
+
+      .poster {
+        display: flex;
+        align-items: center;
+        gap: 40px;
+        padding: 0 56px;
+      }
+
+      .mark {
+        width: 300px;
+        height: 300px;
+        flex: none;
+      }
+
+      .kicker {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: #8fb3ff;
+      }
+
+      h1 {
+        margin: 10px 0 12px;
+        font-size: 56px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .rule {
+        width: 56px;
+        height: 2px;
+        margin: 0 0 14px;
+        background: linear-gradient(90deg, #4f8cff, #a78bfa);
+        border-radius: 999px;
+      }
+
+      .tagline {
+        margin: 0;
+        max-width: 340px;
+        font-size: 15px;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #a3abc4;
+      }
+
+      .chip {
+        position: fixed;
+        right: 28px;
+        bottom: 26px;
+        padding: 4px 10px;
+        font-family: monospace;
+        font-size: 11px;
+        color: #8b91a6;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.10);
+        border-radius: 999px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="sheen"></div>
+    <div class="frame"></div>
+    <div class="poster">
+      <!-- The emblem is inline vector art (layered bezier blades, gradient fills,
+           hairline strokes) with no bitmap assets anywhere on the page. -->
+      <svg class="mark" viewBox="0 0 320 320">
+        <defs>
+          <linearGradient id="blade-a" x1="0" y1="1" x2="0.4" y2="0">
+            <stop offset="0" stop-color="#2a4bd7"/>
+            <stop offset="0.55" stop-color="#5a9aff"/>
+            <stop offset="1" stop-color="#bfe0ff"/>
+          </linearGradient>
+          <linearGradient id="blade-b" x1="0" y1="1" x2="0.4" y2="0">
+            <stop offset="0" stop-color="#4c22c8"/>
+            <stop offset="1" stop-color="#b9a0ff"/>
+          </linearGradient>
+          <linearGradient id="blade-c" x1="0" y1="1" x2="0.4" y2="0">
+            <stop offset="0" stop-color="#1f3db2"/>
+            <stop offset="1" stop-color="#54e0ff"/>
+          </linearGradient>
+          <linearGradient id="edge" x1="0" y1="1" x2="0.4" y2="0">
+            <stop offset="0" stop-color="rgba(255, 255, 255, 0)"/>
+            <stop offset="1" stop-color="rgba(255, 255, 255, 0.9)"/>
+          </linearGradient>
+          <radialGradient id="core">
+            <stop offset="0" stop-color="#ffffff"/>
+            <stop offset="0.35" stop-color="#9cc2ff"/>
+            <stop offset="1" stop-color="rgba(79, 140, 255, 0)"/>
+          </radialGradient>
+          <radialGradient id="halo">
+            <stop offset="0" stop-color="rgba(90, 130, 255, 0.14)"/>
+            <stop offset="0.7" stop-color="rgba(120, 90, 255, 0.06)"/>
+            <stop offset="1" stop-color="rgba(120, 90, 255, 0)"/>
+          </radialGradient>
+          <!-- One swept blade, pointing up from the core, curling clockwise.
+               Every blade below is a rotation of this path or its edge line. -->
+          <path id="blade"
+                d="M 160 144 C 150 100, 158 60, 196 26 C 176 64, 172 104, 172 142 Z"/>
+          <path id="blade-edge" fill="none" stroke="url(#edge)" stroke-width="1.2"
+                d="M 160 144 C 150 100, 158 60, 196 26"/>
+          <path id="spark"
+                d="M 0 -6 Q 1.4 -1.4, 6 0 Q 1.4 1.4, 0 6 Q -1.4 1.4, -6 0 Q -1.4 -1.4, 0 -6 Z"/>
+        </defs>
+
+        <!-- Ambient halo and orbit rings -->
+        <circle cx="160" cy="160" r="150" fill="url(#halo)"/>
+        <ellipse cx="160" cy="160" rx="140" ry="54" fill="none" stroke="url(#edge)"
+                 stroke-width="1" opacity="0.4" transform="rotate(-26 160 160)"/>
+        <ellipse cx="160" cy="160" rx="120" ry="66" fill="none" stroke="url(#edge)"
+                 stroke-width="1" opacity="0.25" transform="rotate(24 160 160)"/>
+        <circle cx="160" cy="160" r="96" fill="none" stroke="rgba(191, 224, 255, 0.5)"
+                stroke-width="1.4" stroke-linecap="round" stroke-dasharray="0.1 14"
+                opacity="0.7"/>
+
+        <!-- Outer ring: four long bright blades with four short dim blades between,
+             so the silhouette alternates and the mark reads layered, not radial. -->
+        <use href="#blade" fill="url(#blade-a)" opacity="0.95"/>
+        <use href="#blade" fill="url(#blade-c)" opacity="0.85" transform="rotate(90 160 160)"/>
+        <use href="#blade" fill="url(#blade-b)" opacity="0.9" transform="rotate(180 160 160)"/>
+        <use href="#blade" fill="url(#blade-a)" opacity="0.85" transform="rotate(270 160 160)"/>
+        <g transform="rotate(45 160 160) translate(160 160) scale(0.8) translate(-160 -160)">
+          <use href="#blade" fill="url(#blade-b)" opacity="0.55"/>
+          <use href="#blade" fill="url(#blade-a)" opacity="0.5" transform="rotate(90 160 160)"/>
+          <use href="#blade" fill="url(#blade-c)" opacity="0.55" transform="rotate(180 160 160)"/>
+          <use href="#blade" fill="url(#blade-b)" opacity="0.5" transform="rotate(270 160 160)"/>
+        </g>
+
+        <!-- Inner ring: the same blade scaled toward the core, offset a half step -->
+        <g transform="rotate(22.5 160 160) translate(160 160) scale(0.55) translate(-160 -160)">
+          <use href="#blade" fill="url(#blade-c)" opacity="0.8"/>
+          <use href="#blade" fill="url(#blade-a)" opacity="0.6" transform="rotate(90 160 160)"/>
+          <use href="#blade" fill="url(#blade-b)" opacity="0.75" transform="rotate(180 160 160)"/>
+          <use href="#blade" fill="url(#blade-c)" opacity="0.6" transform="rotate(270 160 160)"/>
+        </g>
+
+        <!-- Hairline highlights hugging three blade edges -->
+        <use href="#blade-edge" opacity="0.9"/>
+        <use href="#blade-edge" opacity="0.6" transform="rotate(90 160 160)"/>
+        <use href="#blade-edge" opacity="0.75" transform="rotate(180 160 160)"/>
+
+        <!-- Core glow -->
+        <circle cx="160" cy="160" r="58" fill="url(#core)" opacity="0.95"/>
+        <circle cx="160" cy="160" r="16" fill="none" stroke="rgba(255, 255, 255, 0.5)"
+                stroke-width="1"/>
+        <circle cx="160" cy="160" r="9" fill="#ffffff"/>
+
+        <!-- Spark field -->
+        <use href="#spark" fill="#bfe0ff" opacity="0.9" transform="translate(252 84)"/>
+        <use href="#spark" fill="#b9a0ff" opacity="0.7" transform="translate(70 232) scale(0.7)"/>
+        <use href="#spark" fill="#ffffff" opacity="0.8" transform="translate(238 240) scale(0.5)"/>
+        <use href="#spark" fill="#5a9aff" opacity="0.6" transform="translate(88 74) scale(0.6)"/>
+        <circle cx="288" cy="176" r="2" fill="#bfe0ff" opacity="0.7"/>
+        <circle cx="40" cy="142" r="1.6" fill="#b9a0ff" opacity="0.6"/>
+        <circle cx="176" cy="34" r="1.8" fill="#ffffff" opacity="0.6"/>
+      </svg>
+
+      <div class="copy">
+        <div class="kicker">Vector-perfect rendering</div>
+        <h1>Ultralight</h1>
+        <div class="rule"></div>
+        <p class="tagline">
+          Lightweight HTML rendering for games and desktop apps. This poster was
+          rendered offscreen and saved straight to a PNG.
+        </p>
+      </div>
+    </div>
+    <div class="chip">result.png &middot; 1600 &times; 800</div>
+  </body>
+</html>

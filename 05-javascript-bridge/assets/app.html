@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>JavaScript Bridge</title>
+    <style>
+      /* Ultralight sample design tokens, v2 (native-adaptive) */
+      :root {
+        --bg: #eef0f5;  --panel: #ffffff;  --panel-2: #f6f7fa;
+        --text: #1b2030;  --muted: #6b7186;  --border: #e1e4ec;
+        --accent: #3b6cf6;  --accent-2: #7c3aed;
+        --ok: #18a058;  --warn: #e8a317;  --bad: #e5484d;
+        --sel: rgba(59, 108, 246, 0.12);
+        --shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+        --shadow-pop: 0 12px 28px rgba(16, 24, 40, 0.16);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1117;  --panel: #171a23;  --panel-2: #1d2130;
+          --text: #e6e8ef;  --muted: #8b91a6;  --border: #2a2f40;
+          --accent: #4f8cff;  --accent-2: #a78bfa;
+          --ok: #3ecf8e;  --warn: #ffb648;  --bad: #ff5c6c;
+          --sel: rgba(79, 140, 255, 0.18);
+          --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+          --shadow-pop: 0 14px 36px rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      html, body {
+        margin: 0;
+        height: 100%;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        box-sizing: border-box;
+        padding: 20px 24px;
+        background: var(--bg);
+        color: var(--text);
+        font-family: sans-serif;
+        font-size: 13px;
+        line-height: 1.4;
+        cursor: default;
+        -webkit-user-select: none;
+        overflow: hidden;
+      }
+
+      .kicker {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 4px 0 0;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px;
+        box-shadow: var(--shadow);
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      .row {
+        display: flex;
+        gap: 12px;
+      }
+
+      .row .card { flex: 1; }
+
+      .label {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.1em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      .stat-row {
+        display: flex;
+        gap: 16px;
+      }
+
+      .stat { flex: 1; }
+
+      .stat .value,
+      .big {
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .stat .unit {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .btn {
+        align-self: flex-start;
+        padding: 9px 18px;
+        font: inherit;
+        font-weight: 600;
+        color: #ffffff;
+        background: var(--accent);
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                    opacity 160ms ease-out;
+      }
+
+      .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+      .btn:active { transform: translateY(0); box-shadow: none; }
+      .btn:disabled { opacity: 0.5; transform: none; box-shadow: none; }
+
+      .btn.secondary {
+        color: var(--text);
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        font-family: monospace;
+        font-weight: 400;
+      }
+
+      canvas {
+        display: block;
+        width: 100%;
+        height: 110px;
+      }
+
+      .note {
+        color: var(--muted);
+        font-size: 12px;
+      }
+
+      .mono {
+        font-family: monospace;
+        font-size: 12px;
+        min-height: 17px;
+      }
+
+      footer {
+        color: var(--muted);
+        font-size: 12px;
+        font-variant-numeric: tabular-nums;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <div class="kicker">Ultralight &middot; JavaScript Bridge</div>
+      <h1>Calling C++ from the page</h1>
+    </div>
+
+    <div class="card">
+      <div class="label">Typed call benchmark</div>
+      <div class="stat-row">
+        <div class="stat">
+          <div class="value" id="per-call">&ndash;</div>
+          <div class="unit">&micro;s per call</div>
+        </div>
+        <div class="stat">
+          <div class="value" id="per-sec">&ndash;</div>
+          <div class="unit">calls per second</div>
+        </div>
+      </div>
+      <canvas id="chart"></canvas>
+      <button class="btn" id="run">Run benchmark</button>
+      <div class="note" id="bench-note">Calls <code>app.increment()</code> in a tight loop
+        and plots each frame's cost per call.</div>
+    </div>
+
+    <div class="row">
+      <div class="card">
+        <div class="label">Call C++</div>
+        <button class="btn secondary" id="ping">app.ping('hello')</button>
+        <div class="mono" id="pong">&nbsp;</div>
+      </div>
+
+      <div class="card">
+        <div class="label">Listen to C++</div>
+        <div class="big" id="uptime">0:00</div>
+        <div class="note">Pushed from C++ once a second via
+          <code>app.on('tick')</code>.</div>
+      </div>
+    </div>
+
+    <footer id="version"></footer>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      // ---- Call C++: a synchronous typed call; the string comes back from native code.
+
+      $('ping').addEventListener('click', () => {
+        $('pong').textContent = app.ping('hello');
+      });
+
+      // ---- Listen to C++: native code emits 'tick' once a second.
+
+      app.on('tick', (uptime) => {
+        const total = Math.floor(uptime);
+        $('uptime').textContent = Math.floor(total / 60) + ':' +
+            String(total % 60).padStart(2, '0');
+      });
+
+      // ---- The call benchmark ----------------------------------------------------------
+
+      const points = [];
+
+      function drawChart() {
+        const canvas = $('chart');
+        const scale = window.devicePixelRatio;
+        canvas.width = canvas.clientWidth * scale;
+        canvas.height = canvas.clientHeight * scale;
+        const ctx = canvas.getContext('2d');
+        ctx.scale(scale, scale);
+        if (points.length < 2)
+          return;
+
+        const accent = getComputedStyle(document.documentElement)
+            .getPropertyValue('--accent').trim();
+        const w = canvas.clientWidth, h = canvas.clientHeight;
+        const max = Math.max(...points), min = Math.min(...points);
+        const span = (max - min) || 1;
+
+        // ctx.filter draws the line and its glow in one pass.
+        ctx.filter = 'drop-shadow(0 0 6px ' + accent + ')';
+        ctx.strokeStyle = accent;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.beginPath();
+        points.forEach((v, i) => {
+          const x = 8 + i * (w - 16) / (points.length - 1);
+          const y = h - 12 - (v - min) / span * (h - 24);
+          i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+        });
+        ctx.stroke();
+        ctx.filter = 'none';
+      }
+
+      // Redraw with the other theme's accent when the OS theme flips.
+      matchMedia('(prefers-color-scheme: dark)').addEventListener('change', drawChart);
+
+      $('run').addEventListener('click', () => {
+        const btn = $('run');
+        btn.disabled = true;
+        points.length = 0;
+
+        // Chain each call through an accumulator and check the total at the end, so the
+        // optimizer cannot delete the calls being measured.
+        const budgetMs = 400;
+        let acc = 0, calls = 0, elapsed = 0;
+
+        function frame() {
+          const frameStart = performance.now();
+          let frameCalls = 0;
+          while (performance.now() - frameStart < 6) {
+            for (let i = 0; i < 512; ++i)
+              acc = app.increment(acc);
+            frameCalls += 512;
+          }
+          const frameMs = performance.now() - frameStart;
+          calls += frameCalls;
+          elapsed += frameMs;
+          points.push(frameMs * 1000 / frameCalls);
+
+          $('per-call').textContent = (elapsed * 1000 / calls).toFixed(2);
+          $('per-sec').textContent = Math.round(calls / elapsed * 1000).toLocaleString();
+          drawChart();
+
+          if (elapsed < budgetMs) {
+            requestAnimationFrame(frame);
+          } else {
+            btn.disabled = false;
+            $('bench-note').textContent = acc === calls
+                ? calls.toLocaleString() + ' calls verified (the accumulator matches).'
+                : 'Verification failed.';
+          }
+        }
+
+        requestAnimationFrame(frame);
+      });
+
+      // The namespace is injected before any page script runs, and it is frozen.
+      $('version').textContent = 'app.version ' + app.version
+          + (Object.isFrozen(app) ? '  ·  frozen namespace' : '');
+    </script>
+  </body>
+</html>

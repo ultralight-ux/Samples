@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Dashboard</title>
+    <!--
+      This page has no script. Every readout below is declared in markup and bound to the
+      native model in main.cpp: `{{path}}` renders a value as text, `ul-style-width` writes
+      one as a style, `ul-value` captures the text field back into the model, and
+      `ul-on:click` fires a named action. The styling is deliberately plain; the markup is
+      the sample.
+    -->
+    <style>
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: #ffffff;
+      }
+
+      body {
+        color: #1b1b1f;
+        font-family: sans-serif;
+        font-size: 13px;
+        line-height: 1.4;
+      }
+
+      /* Hold the page hidden until the first published values have been applied (the
+         library toggles .ul-ready on <html>), so the mustache text never flashes. */
+      main { visibility: hidden; }
+      .ul-ready main { visibility: visible; }
+
+      main {
+        max-width: 400px;
+        margin: 0 auto;
+        padding: 32px 32px 0;
+      }
+
+      h1 {
+        margin: 0 0 24px;
+        font-size: 20px;
+        font-weight: 600;
+        min-height: 28px;
+      }
+
+      section {
+        padding: 16px 0;
+        border-top: 1px solid #e4e4e8;
+      }
+
+      h2 {
+        margin: 0 0 8px;
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #6d6d78;
+      }
+
+      .row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .value {
+        font-size: 26px;
+        font-weight: 600;
+        font-variant-numeric: tabular-nums;
+      }
+
+      .bar {
+        flex: 1;
+        height: 8px;
+        border: 1px solid #d9d9de;
+        border-radius: 999px;
+        overflow: hidden;
+      }
+
+      .fill {
+        height: 100%;
+        background: #3b6cf6;
+      }
+
+      .pct {
+        width: 40px;
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+        color: #6d6d78;
+      }
+
+      input, button {
+        -webkit-appearance: none;
+        font: inherit;
+        color: inherit;
+        background: #ffffff;
+        border: 1px solid #d9d9de;
+        border-radius: 6px;
+        padding: 7px 10px;
+      }
+
+      input { flex: 1; }
+
+      button:hover { background: #f4f4f6; }
+      button:active { background: #ececef; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <!-- Bound text: re-renders whenever the model's `name` changes, including edits
+           captured from the text field below. -->
+      <h1>{{dash.name}}</h1>
+
+      <section>
+        <h2>Requests served</h2>
+        <div class="row">
+          <span class="value">{{dash.requests}}</span>
+          <!-- Fires the named action declared in the schema; the handler in main.cpp
+               zeroes the counter. -->
+          <button ul-on:click="dash.reset">Reset</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Server load</h2>
+        <div class="row">
+          <!-- The bar is a bound style: `|pct` writes the 0-100 value as a width in %. -->
+          <div class="bar"><div class="fill" ul-style-width="dash.load|pct"></div></div>
+          <!-- In text, `|pct` is the named formatter main.cpp registers with
+               DefineFormat(); it renders the same value as "62%". -->
+          <span class="pct">{{dash.load|pct}}</span>
+        </div>
+      </section>
+
+      <section>
+        <h2>Dashboard name</h2>
+        <div class="row">
+          <!-- Two-way: typing stages a change on the model (clamped by the schema's
+               validator), and the accepted value echoes back into the heading above. -->
+          <input type="text" ul-value="dash.name" spellcheck="false">
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

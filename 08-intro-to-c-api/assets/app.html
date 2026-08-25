@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Intro to C API</title>
+    <style>
+      /* Ultralight sample design tokens, v2 (native-adaptive), reduced to the two accents
+         this page uses. The whole page is the accent gradient; the button and the message
+         the C callback returns are the only content. */
+      :root {
+        --accent: #3b6cf6;  --accent-2: #7c3aed;
+        --shadow: 0 4px 12px rgba(16, 24, 40, 0.16);
+        --shadow-pop: 0 12px 28px rgba(16, 24, 40, 0.28);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --accent: #3f6ddd;  --accent-2: #6d3fd1;
+          --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+          --shadow-pop: 0 14px 36px rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      html, body {
+        margin: 0;
+        height: 100%;
+      }
+
+      body {
+        position: relative;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        font-family: sans-serif;
+        cursor: default;
+        -webkit-user-select: none;
+        overflow: hidden;
+      }
+
+      /* The button and the revealed message trade places with a short transition; the
+         message text itself comes back from the C callback. */
+      #btn, #msg {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .btn {
+        padding: 16px 40px;
+        font: inherit;
+        font-size: 17px;
+        font-weight: 600;
+        color: var(--accent);
+        background: #ffffff;
+        border: none;
+        border-radius: 999px;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      .btn:hover { transform: translateY(-2px); box-shadow: var(--shadow-pop); }
+      .btn:active { transform: translateY(0); box-shadow: var(--shadow); }
+
+      #msg {
+        font-size: 44px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        color: #ffffff;
+        visibility: hidden;
+        opacity: 0;
+        transform: translateY(24px);
+      }
+
+      .revealed #btn .btn {
+        visibility: hidden;
+        opacity: 0;
+        transform: translateY(-24px);
+        transition: visibility 0s 240ms, opacity 240ms ease-out, transform 240ms ease-out;
+      }
+
+      .revealed #msg {
+        visibility: visible;
+        opacity: 1;
+        transform: translateY(0);
+        transition: opacity 260ms ease-out 140ms, transform 260ms ease-out 140ms;
+      }
+
+      .hint {
+        position: absolute;
+        left: 0;
+        right: 0;
+        bottom: 18px;
+        text-align: center;
+        font-size: 11px;
+        letter-spacing: 0.04em;
+        color: rgba(255, 255, 255, 0.6);
+      }
+
+      .hint code {
+        font-family: monospace;
+        font-size: 11px;
+        color: rgba(255, 255, 255, 0.75);
+      }
+    </style>
+    <script>
+    function handleClick() {
+      // The `app` namespace is registered by the C code before this page loads; this one
+      // call crosses into C and returns a plain string.
+      document.getElementById('msg').textContent = app.getMessage();
+      document.body.classList.add('revealed');
+    }
+    </script>
+  </head>
+  <body>
+    <div id="msg"></div>
+    <div id="btn"><button class="btn" onclick="handleClick();">Call into C</button></div>
+    <div class="hint">The button calls <code>app.getMessage()</code>, bound in
+      <code>main.c</code></div>
+  </body>
+</html>

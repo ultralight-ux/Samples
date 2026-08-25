@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Basic App</title>
+    <style>
+      /* Ultralight sample design tokens, v2 (native-adaptive) */
+      :root {
+        --bg: #eef0f5;         /* window ground */
+        --panel: #ffffff;      /* card / pane surface */
+        --panel-2: #f6f7fa;    /* inset surface (inputs, code, table heads) */
+        --text: #1b2030;
+        --muted: #6b7186;
+        --border: #e1e4ec;
+        --accent: #3b6cf6;     /* primary action / selection */
+        --accent-2: #7c3aed;   /* gradient partner, secondary series */
+        --ok: #18a058;  --warn: #e8a317;  --bad: #e5484d;
+        --sel: rgba(59, 108, 246, 0.12);   /* selection wash + focus ring */
+        --shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
+        --shadow-pop: 0 12px 28px rgba(16, 24, 40, 0.16);
+      }
+
+      /* The page follows the OS light/dark theme. Ultralight feeds the system
+         theme to this media query, so the swap below happens live with no
+         JavaScript. Note the page styles its own controls: built-in form
+         controls always render with their light appearance. */
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #0f1117;  --panel: #171a23;  --panel-2: #1d2130;
+          --text: #e6e8ef;  --muted: #8b91a6;  --border: #2a2f40;
+          --accent: #4f8cff;  --accent-2: #a78bfa;
+          --ok: #3ecf8e;  --warn: #ffb648;  --bad: #ff5c6c;
+          --sel: rgba(79, 140, 255, 0.18);
+          --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+          --shadow-pop: 0 14px 36px rgba(0, 0, 0, 0.5);
+        }
+      }
+
+      html, body {
+        margin: 0;
+        height: 100%;
+      }
+
+      /* The engine resolves the generic font families below to each platform's
+         default browser fonts (eg, Segoe UI on Windows, Helvetica on macOS). */
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: var(--bg);
+        color: var(--text);
+        font-family: sans-serif;
+        font-size: 13px;
+        line-height: 1.4;
+        cursor: default;
+        -webkit-user-select: none;
+        overflow: hidden;
+      }
+
+      /* A soft accent wash behind the card keeps the ground from reading flat. */
+      .wash {
+        position: fixed;
+        inset: 0;
+        background:
+          radial-gradient(600px 380px at 30% 20%,
+                          color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
+          radial-gradient(520px 360px at 75% 85%,
+                          color-mix(in srgb, var(--accent-2) 8%, transparent), transparent 70%);
+      }
+
+      .card {
+        position: relative;
+        width: 340px;
+        padding: 32px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+      }
+
+      .kicker {
+        font-size: 11px;
+        font-weight: 600;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+
+      h1 {
+        margin: 8px 0 12px;
+        font-size: 22px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      p {
+        margin: 0 0 24px;
+        color: var(--muted);
+      }
+
+      code {
+        font-family: monospace;
+        font-size: 12px;
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 1px 5px;
+      }
+
+      .btn {
+        display: inline-block;
+        padding: 9px 18px;
+        font: inherit;
+        font-weight: 600;
+        color: #ffffff;
+        background: var(--accent);
+        border: none;
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+        cursor: pointer;
+        transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                    background-color 160ms ease-out;
+      }
+
+      .btn:hover {
+        background: color-mix(in srgb, var(--accent), #ffffff 10%);
+        box-shadow: var(--shadow-pop);
+        transform: translateY(-2px);
+      }
+
+      .btn:active {
+        background: color-mix(in srgb, var(--accent), #000000 12%);
+        box-shadow: var(--shadow);
+        transform: translateY(0);
+      }
+
+      .btn:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px var(--sel), var(--shadow);
+      }
+
+      /* The button reveals these pointers in place (see the script below); the
+         transition runs on the reveal, so the card grows smoothly. */
+      .next {
+        max-height: 0;
+        opacity: 0;
+        overflow: hidden;
+        transition: max-height 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                    opacity 200ms ease-out;
+      }
+
+      .card.open .next {
+        max-height: 200px;
+        opacity: 1;
+      }
+
+      .card.open .btn { display: none; }
+
+      .next .step {
+        display: flex;
+        gap: 10px;
+        padding: 7px 0;
+        color: var(--muted);
+      }
+
+      .next .step + .step { border-top: 1px solid var(--panel-2); }
+
+      .next .step::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        margin-top: 5px;
+        border-radius: 50%;
+        background: var(--accent);
+        flex-shrink: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wash"></div>
+    <div class="card">
+      <div class="kicker">Ultralight &middot; Basic App</div>
+      <h1>Hello, Ultralight.</h1>
+      <p>
+        This window is a real HTML page rendered by Ultralight inside a native AppCore window.
+        It follows your OS light and dark theme automatically. Edit <code>assets/page.html</code>
+        and relaunch the app to make it yours.
+      </p>
+      <button class="btn" id="go">Get Started</button>
+      <div class="next">
+        <div class="step">Open <code>main.cpp</code>-- the whole app is about thirty lines.</div>
+        <div class="step">Sample 3 arranges several pages with the window's layout tree.</div>
+        <div class="step">Samples 4 through 6 connect pages like this one to native code.</div>
+      </div>
+    </div>
+
+    <script>
+      // The reveal is plain page script; no native code is involved.
+      document.getElementById('go').addEventListener('click', () => {
+        document.querySelector('.card').classList.add('open');
+      });
+    </script>
+  </body>
+</html>

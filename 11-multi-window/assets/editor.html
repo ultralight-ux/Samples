@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>HTML Editor</title>
+<style>
+    #editor {
+        position: absolute;
+        top: 0;
+        right: 0;
+        bottom: 0;
+        left: 0;
+        font-size: 13px;
+    }
+    .ace-dracula .ace_marker-layer .ace_active-line {background: #44475a;}
+    .ace-dracula .ace_marker-layer .ace_selection {background: #64599a}
+    .ace-dracula .ace_gutter-active-line {background-color: #44475a;}
+</style>
+</head>
+<body>
+
+<div id="editor">
+</div>
+
+<script src="ace-1.4.12-src-min-noconflict/ace.js" type="text/javascript" charset="utf-8"></script>
+<script src="ace-1.4.12-src-min-noconflict/ext-language_tools.js" type="text/javascript" charset="utf-8"></script>
+<script>
+    const editor = ace.edit("editor");
+
+    // The starting document: a small self-contained page that adapts to the OS
+    // light/dark theme. Whatever you type here renders live in the preview window.
+    const html = `<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        :root {
+            --bg: #eef0f5;  --panel: #ffffff;  --text: #1b2030;
+            --muted: #6b7186;  --accent: #3b6cf6;
+            --border: #e1e4ec;
+        }
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg: #0f1117;  --panel: #171a23;  --text: #e6e8ef;
+                --muted: #8b91a6;  --accent: #4f8cff;
+                --border: #2a2f40;
+            }
+        }
+
+        html, body {
+            margin: 0;
+            height: 100%;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--bg);
+            color: var(--text);
+            font-family: sans-serif;
+            font-size: 13px;
+            line-height: 1.4;
+        }
+
+        .card {
+            width: 320px;
+            padding: 32px;
+            text-align: center;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+        }
+
+        h1 {
+            margin: 12px 0 8px;
+            font-size: 22px;
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            margin: 0;
+            color: var(--muted);
+        }
+
+        .mark { color: var(--accent); }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <svg class="mark" width="36" height="36" viewBox="0 0 36 36">
+            <path d="M4 24 C10 8, 26 8, 32 24" fill="none"
+                  stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+            <circle cx="18" cy="24" r="4" fill="currentColor"/>
+        </svg>
+        <h1>Hello, Ultralight.</h1>
+        <p>Edit me on the left; I re-render as you type.</p>
+    </div>
+</body>
+</html>
+`
+    editor.setTheme("ace/theme/dracula");
+    editor.setValue(html);
+    editor.session.setMode("ace/mode/html");
+    editor.setOptions({
+      showPrintMargin: false,
+      showInvisibles: true,
+      enableLiveAutocompletion: true,
+      enableSnippets: true
+    });
+    editor.clearSelection();
+
+    // Hand the document to native code: once now, then on every change. Changes are
+    // debounced so fast typing coalesces into one preview update.
+    let pending = 0;
+    function pushContent() {
+      native.updateEditor(editor.getSession().getValue());
+    }
+    editor.getSession().on('change', () => {
+      clearTimeout(pending);
+      pending = setTimeout(pushContent, 200);
+    });
+    pushContent();
+</script>
+</body>
+</html>

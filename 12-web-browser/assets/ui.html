@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Browser Chrome</title>
+    <style>
+      /* Ultralight sample design tokens, v2 (native-adaptive, material-backed).
+         The chrome strip sits on the window's backdrop material, so there is no opaque
+         ground here: the body stays transparent and every surface is a translucent tint.
+         This page runs no script; native code drives it through the DOM API. */
+      :root {
+        --panel: rgba(255, 255, 255, 0.62);
+        --panel-2: rgba(255, 255, 255, 0.45);
+        --text: #1e1e24;
+        --muted: #5d5d68;
+        --border: rgba(30, 30, 36, 0.12);
+        --accent: #6d6d78;
+        --bad: #e5484d;
+        --sel: rgba(30, 30, 36, 0.08);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --panel: rgba(28, 28, 32, 0.62);
+          --panel-2: rgba(28, 28, 32, 0.45);
+          --text: #e8e8ec;
+          --muted: #a0a0aa;
+          --border: rgba(255, 255, 255, 0.1);
+          --accent: #b4b4be;
+          --bad: #ff5c6c;
+          --sel: rgba(255, 255, 255, 0.1);
+        }
+      }
+
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: transparent;
+      }
+
+      body {
+        display: flex;
+        flex-direction: column;
+        color: var(--text);
+        font-family: sans-serif;
+        font-size: 13px;
+        cursor: default;
+        -webkit-user-select: none;
+        overflow: hidden;
+      }
+
+      /* The tab row doubles as the window's drag strip; interactive children opt out
+         with `app-region: no-drag`. */
+      .tabrow {
+        display: flex;
+        align-items: flex-end;
+        height: 40px;
+        flex-shrink: 0;
+        padding: 0 8px;
+        app-region: drag;
+        transition: opacity 160ms ease-out;
+      }
+
+      .is-inactive .tabrow, .is-inactive .toolbar { opacity: 0.55; }
+
+      /* Native code measures the macOS traffic lights and sets --controls-clearance so
+         the tab row lays out around them; elsewhere the clearance stays zero. */
+      .clearance {
+        width: var(--controls-clearance, 0px);
+        flex-shrink: 0;
+      }
+
+      #tabs {
+        display: flex;
+        align-items: flex-end;
+        gap: 4px;
+        min-width: 0;
+        app-region: no-drag;
+      }
+
+      .tab {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        box-sizing: border-box;
+        width: 200px;
+        min-width: 56px;
+        flex-shrink: 1;
+        height: 32px;
+        padding: 0 8px 0 12px;
+        border: 1px solid transparent;
+        border-bottom: none;
+        border-radius: 8px 8px 0 0;
+        transition: background-color 120ms ease-out;
+      }
+
+      .tab:hover { background: var(--sel); }
+
+      .tab.active {
+        background: var(--panel);
+        border-color: var(--border);
+      }
+
+      .tab-title {
+        flex: 1;
+        min-width: 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        color: var(--muted);
+      }
+
+      .tab.active .tab-title { color: var(--text); }
+
+      /* A loading tab pulses the dot before its title; native code toggles the class. */
+      .tab::before {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: var(--muted);
+        opacity: 0;
+        flex-shrink: 0;
+        transition: opacity 160ms ease-out;
+      }
+
+      .tab.loading::before {
+        opacity: 1;
+        background: var(--accent);
+        animation: pulse 900ms ease-in-out infinite alternate;
+      }
+
+      @keyframes pulse {
+        from { transform: scale(0.7); opacity: 0.5; }
+        to   { transform: scale(1.1); opacity: 1; }
+      }
+
+      .tab-close {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        color: var(--muted);
+        flex-shrink: 0;
+        transition: background-color 120ms ease-out, color 120ms ease-out;
+      }
+
+      .tab-close::before { content: "\00d7"; font-size: 14px; }
+
+      .tab-close:hover { background: var(--sel); color: var(--text); }
+
+      #new-tab {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        margin: 0 0 3px 6px;
+        border-radius: 6px;
+        color: var(--muted);
+        font-size: 16px;
+        flex-shrink: 0;
+        app-region: no-drag;
+        transition: background-color 120ms ease-out, color 120ms ease-out;
+      }
+
+      #new-tab:hover { background: var(--sel); color: var(--text); }
+
+      .tabrow .spacer { flex: 1; }
+
+      /* App-drawn caption buttons (hidden on macOS, where the native traffic lights
+         remain). Their footprints are registered as native hit-test regions, so the OS
+         performs the window actions; hover still reaches the page for styling. */
+      .window-buttons {
+        display: flex;
+        align-self: flex-start;
+        app-region: no-drag;
+      }
+
+      .native-controls .window-buttons { display: none; }
+
+      .win-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 46px;
+        height: 40px;
+        color: var(--muted);
+        transition: background-color 120ms ease-out, color 120ms ease-out;
+      }
+
+      .win-btn:hover { background: var(--sel); color: var(--text); }
+      .win-btn.close:hover { background: var(--bad); color: #ffffff; }
+
+      .win-btn svg { display: block; }
+
+      .win-btn .restore { display: none; }
+      .is-maximized .win-btn .maximize { display: none; }
+      .is-maximized .win-btn .restore { display: block; }
+
+      .toolbar {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        height: 44px;
+        flex-shrink: 0;
+        padding: 0 10px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--border);
+        transition: opacity 160ms ease-out;
+      }
+
+      .tool-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        border-radius: 50%;
+        color: var(--muted);
+        flex-shrink: 0;
+        transition: background-color 120ms ease-out, color 120ms ease-out;
+      }
+
+      .tool-btn:hover { background: var(--sel); color: var(--text); }
+
+      .tool-btn.disabled {
+        opacity: 0.35;
+        pointer-events: none;
+      }
+
+      .tool-btn svg { display: block; }
+
+      #stop { display: none; }
+
+      #address {
+        flex: 1;
+        min-width: 0;
+        height: 30px;
+        margin: 0 6px;
+        padding: 0 14px;
+        font: inherit;
+        color: var(--text);
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 999px;
+        outline: none;
+        transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+      }
+
+      #address:focus {
+        border-color: var(--accent);
+        box-shadow: 0 0 0 3px var(--sel);
+      }
+
+      #address::selection {
+        background: rgba(127, 127, 138, 0.35);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="tabrow">
+      <div class="clearance"></div>
+      <div id="tabs"></div>
+      <div id="new-tab">+</div>
+      <div class="spacer"></div>
+      <div class="window-buttons">
+        <div class="win-btn" id="win-min">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M0 5 H10" stroke="currentColor" stroke-width="1"/>
+          </svg>
+        </div>
+        <div class="win-btn" id="win-max">
+          <svg class="maximize" width="10" height="10" viewBox="0 0 10 10">
+            <rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor"/>
+          </svg>
+          <svg class="restore" width="10" height="10" viewBox="0 0 10 10">
+            <path d="M2.5 2.5 V0.5 H9.5 V7.5 H7.5" fill="none" stroke="currentColor"/>
+            <rect x="0.5" y="2.5" width="7" height="7" fill="none" stroke="currentColor"/>
+          </svg>
+        </div>
+        <div class="win-btn close" id="win-close">
+          <svg width="10" height="10" viewBox="0 0 10 10">
+            <path d="M0 0 L10 10 M10 0 L0 10" stroke="currentColor" stroke-width="1.1"/>
+          </svg>
+        </div>
+      </div>
+    </div>
+
+    <div class="toolbar">
+      <div class="tool-btn" id="back">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <path d="M10 3 L5 8 L10 13" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="tool-btn" id="forward">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <path d="M6 3 L11 8 L6 13" fill="none" stroke="currentColor" stroke-width="1.6"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="tool-btn" id="refresh">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <path d="M13 8 a5 5 0 1 1 -1.5 -3.5 M11.5 1.5 V4.5 H8.5" fill="none"
+                stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="tool-btn" id="stop">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <path d="M3.5 3.5 L12.5 12.5 M12.5 3.5 L3.5 12.5" stroke="currentColor"
+                stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <input id="address" type="text" spellcheck="false">
+      <div class="tool-btn" id="tools">
+        <svg width="16" height="16" viewBox="0 0 16 16">
+          <path d="M2.5 5 L8 2.5 L13.5 5 L8 7.5 Z" fill="none" stroke="currentColor"
+                stroke-width="1.2" stroke-linejoin="round"/>
+          <path d="M2.5 8 L8 10.5 L13.5 8 M2.5 11 L8 13.5 L13.5 11" fill="none"
+                stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </div>
+  </body>
+</html>

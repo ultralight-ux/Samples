@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>Appearance Menu</title>
+    <style>
+      /* Ultralight sample design tokens, v2 (native-adaptive, material-backed).
+         This page fills a popup window rendering the platform's menu material; the panel
+         tint below is all the page adds on top of it. */
+      :root {
+        --panel: rgba(255, 255, 255, 0.5);
+        --text: #1b2030;
+        --muted: #565d73;
+        --border: rgba(27, 32, 48, 0.12);
+        --accent: #3b6cf6;
+        --sel: rgba(59, 108, 246, 0.12);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --panel: rgba(28, 31, 40, 0.45);
+          --text: #e6e8ef;
+          --muted: #9aa1b5;
+          --border: rgba(255, 255, 255, 0.1);
+          --accent: #4f8cff;
+          --sel: rgba(79, 140, 255, 0.18);
+        }
+      }
+
+      html, body {
+        margin: 0;
+        height: 100%;
+        background: transparent;
+      }
+
+      body {
+        font-family: sans-serif;
+        font-size: 13px;
+        color: var(--text);
+        cursor: default;
+        -webkit-user-select: none;
+        overflow: hidden;
+      }
+
+      .menu {
+        box-sizing: border-box;
+        height: 100%;
+        padding: 6px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+      }
+
+      .item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 32px;
+        padding: 0 10px;
+        border-radius: 6px;
+        transition: background-color 120ms ease-out;
+      }
+
+      .item:hover { background: var(--sel); }
+
+      .item .check {
+        width: 12px;
+        color: var(--accent);
+        opacity: 0;
+        transition: opacity 120ms ease-out;
+      }
+
+      .item .check svg { display: block; }
+
+      /* Native code mirrors the current choice into data-scheme on the root element;
+         the matching row shows its checkmark. */
+      :root[data-scheme="auto"]  .item[data-scheme="auto"]  .check,
+      :root[data-scheme="light"] .item[data-scheme="light"] .check,
+      :root[data-scheme="dark"]  .item[data-scheme="dark"]  .check { opacity: 1; }
+
+      .separator {
+        height: 1px;
+        margin: 4px 8px;
+        background: var(--border);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="menu">
+      <div class="item" data-scheme="auto">
+        <span class="check"><svg width="12" height="10" viewBox="0 0 12 10">
+          <path d="M1 5.5 L4.5 9 L11 1" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        </svg></span>
+        Match the system
+      </div>
+      <div class="item" data-scheme="light">
+        <span class="check"><svg width="12" height="10" viewBox="0 0 12 10">
+          <path d="M1 5.5 L4.5 9 L11 1" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        </svg></span>
+        Light
+      </div>
+      <div class="item" data-scheme="dark">
+        <span class="check"><svg width="12" height="10" viewBox="0 0 12 10">
+          <path d="M1 5.5 L4.5 9 L11 1" fill="none" stroke="currentColor" stroke-width="1.8"/>
+        </svg></span>
+        Dark
+      </div>
+      <div class="separator"></div>
+      <div class="item" id="about"><span class="check"></span>About this sample</div>
+      <div class="item" id="quit"><span class="check"></span>Quit</div>
+    </div>
+  </body>
+</html>

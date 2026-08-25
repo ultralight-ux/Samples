@@ -1,0 +1,627 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>New Tab</title>
+    <style>
+      /* This page is the browser's built-in new-tab page. Unlike the app's chrome
+         (which adapts to the OS theme), a new-tab page is wallpaper: it commits to
+         one look, the way a themed start page does in any desktop browser. */
+      :root {
+        --text: #eeeef2;
+        --muted: #97979f;
+        --panel: rgba(255, 255, 255, 0.045);
+        --border: rgba(255, 255, 255, 0.1);
+        --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+        --shadow-pop: 0 14px 36px rgba(0, 0, 0, 0.5);
+      }
+
+      html, body {
+        margin: 0;
+      }
+
+      /* The engine resolves the generic font families below to each platform's
+         default browser fonts (eg, Segoe UI on Windows, Helvetica on macOS). */
+      body {
+        min-height: 100vh;
+        background: #131315;
+        color: var(--text);
+        font-family: sans-serif;
+        font-size: 1rem;
+        line-height: 1.5;
+        cursor: default;
+        -webkit-user-select: none;
+        overflow-x: hidden;
+      }
+
+      /* The starfield canvas sits behind everything; script drives it with
+         requestAnimationFrame (see the bottom of this file). */
+      .field {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      main {
+        position: relative;
+        min-height: 100vh;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 24px 32px 32px;
+        text-align: center;
+      }
+
+      /* ---- Hero art ------------------------------------------------------ */
+
+      /* The mark is drawn by script onto the sharp canvas; the bloom canvas is a
+         blurred copy of the same frame blended on top, which is what makes the
+         line art glow. */
+      .hero {
+        position: relative;
+        flex: 1;
+        width: min(42vh, 340px);
+        min-height: 200px;
+        align-self: center;
+      }
+
+      .hero canvas {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+
+      .hero .bloom {
+        filter: blur(11px);
+        mix-blend-mode: screen;
+        opacity: 0.45;
+      }
+
+      /* ---- Content ------------------------------------------------------- */
+
+      /* The logotype stays thin to match the mark's hairline strokes. */
+      h1 {
+        margin: 0 0 32px;
+        font-size: clamp(2.5rem, 5vw, 3.4rem);
+        font-weight: 200;
+        letter-spacing: 0.02em;
+        line-height: 1.1;
+        color: rgba(238, 238, 242, 0.72);
+        text-shadow: 0 0 24px rgba(255, 255, 255, 0.16);
+      }
+
+      .cards {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 16px;
+        width: 100%;
+        max-width: 880px;
+      }
+
+      @media (max-width: 720px) {
+        .cards { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      }
+
+      .card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        padding: 14px 12px 10px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        box-shadow: var(--shadow);
+        color: inherit;
+        text-decoration: none;
+        cursor: pointer;
+        transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
+                    border-color 160ms ease-out;
+      }
+
+      .card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-pop);
+        border-color: rgba(255, 255, 255, 0.24);
+      }
+
+      .card:active {
+        transform: translateY(0);
+        box-shadow: var(--shadow);
+      }
+
+      .card:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.28), var(--shadow);
+      }
+
+      .chip {
+        flex: none;
+        display: grid;
+        place-items: center;
+        width: 40px;
+        height: 40px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.07);
+        color: #b9b9c2;
+        transition: box-shadow 160ms ease-out;
+      }
+
+      .card:hover .chip {
+        box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.07);
+      }
+
+      .meta {
+        min-width: 0;
+        max-width: 100%;
+      }
+
+      .name {
+        display: block;
+        font-size: 0.9375rem;
+        font-weight: 600;
+      }
+
+      .host {
+        display: block;
+        color: var(--muted);
+        font-size: 0.75rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .hint {
+        margin: 32px 0 0;
+        color: var(--muted);
+        font-size: 0.8125rem;
+      }
+
+      code {
+        font-family: monospace;
+        font-size: 0.75rem;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 4px;
+        padding: 1px 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas class="field" id="field" aria-hidden="true"></canvas>
+
+    <main>
+      <div class="hero" aria-hidden="true">
+        <canvas id="mark"></canvas>
+        <canvas id="mark-bloom" class="bloom"></canvas>
+      </div>
+
+      <h1>Ultralight</h1>
+
+      <nav class="cards">
+        <a class="card wiki" href="https://en.wikipedia.org">
+          <span class="chip">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 7 C10 5.4, 7.4 5, 4.8 5.4 L4.8 18.6 C7.4 18.2, 10 18.6, 12 20.2
+                       C14 18.6, 16.6 18.2, 19.2 18.6 L19.2 5.4 C16.6 5, 14 5.4, 12 7 Z"/>
+              <path d="M12 7 L12 20.2"/>
+            </svg>
+          </span>
+          <span class="meta">
+            <span class="name">Wikipedia</span>
+            <span class="host">en.wikipedia.org</span>
+          </span>
+        </a>
+        <a class="card hn" href="https://news.ycombinator.com">
+          <span class="chip">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6.5 13 L12 7.5 L17.5 13"/>
+              <path d="M6.5 18 L12 12.5 L17.5 18"/>
+            </svg>
+          </span>
+          <span class="meta">
+            <span class="name">Hacker News</span>
+            <span class="host">news.ycombinator.com</span>
+          </span>
+        </a>
+        <a class="card mdn" href="https://developer.mozilla.org">
+          <span class="chip">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9.5 4.5 C7.5 4.5, 8 7.5, 8 9 C8 10.8, 6.2 12, 5 12
+                       C6.2 12, 8 13.2, 8 15 C8 16.5, 7.5 19.5, 9.5 19.5"/>
+              <path d="M14.5 4.5 C16.5 4.5, 16 7.5, 16 9 C16 10.8, 17.8 12, 19 12
+                       C17.8 12, 16 13.2, 16 15 C16 16.5, 16.5 19.5, 14.5 19.5"/>
+            </svg>
+          </span>
+          <span class="meta">
+            <span class="name">MDN Web Docs</span>
+            <span class="host">developer.mozilla.org</span>
+          </span>
+        </a>
+        <a class="card ul" href="https://ultralig.ht">
+          <span class="chip">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3" fill="currentColor" stroke="none"/>
+              <ellipse cx="12" cy="12" rx="8.6" ry="3.3" transform="rotate(-24 12 12)"/>
+              <circle cx="19.8" cy="8.5" r="1.1" fill="currentColor" stroke="none"/>
+            </svg>
+          </span>
+          <span class="meta">
+            <span class="name">Ultralight</span>
+            <span class="host">ultralig.ht</span>
+          </span>
+        </a>
+      </nav>
+
+      <p class="hint">
+        This page ships with the browser sample. Edit <code>assets/new_tab_page.html</code>
+        to make it yours.
+      </p>
+    </main>
+
+    <script>
+      // Everything below draws the hero: the Ultralight mark as glowing line art
+      // with lights that roam its edges, over a starfield flying outward from it.
+      // Plain canvas 2D and requestAnimationFrame; the bloom is a blurred copy of
+      // the sharp canvas (see the .bloom style above).
+
+      // ---- The mark's geometry -------------------------------------------
+
+      // Built in a space where the orb's radius is 130, then scaled to fit the
+      // hero box. Each shard also gets a copy of itself offset down and away,
+      // which reads as the back edge of a glass slab.
+      function buildMark(cx, cy, r) {
+        const s = r / 130;
+        const P = (x, y) => [cx + x * s, cy + y * s];
+        const ext = [-0.2 * s, 16 * s];
+        const k = 0.5523 * r;
+
+        const orbSegs = [
+          [cx + r, cy, cx + r, cy + k, cx + k, cy + r, cx, cy + r],
+          [cx, cy + r, cx - k, cy + r, cx - r, cy + k, cx - r, cy],
+          [cx - r, cy, cx - r, cy - k, cx - k, cy - r, cx, cy - r],
+          [cx, cy - r, cx + k, cy - r, cx + r, cy - k, cx + r, cy],
+        ];
+        const upperTri = [P(49, -109), P(-74, 17), P(-11, 13)];
+        const lowerTri = [P(-44, 110), P(81, -15), P(11, -13)];
+
+        function polygon(points) {
+          const path = new Path2D();
+          path.moveTo(points[0][0], points[0][1]);
+          for (let i = 1; i < points.length; i++) path.lineTo(points[i][0], points[i][1]);
+          path.closePath();
+          return path;
+        }
+        const offset = (points) => points.map((p) => [p[0] + ext[0], p[1] + ext[1]]);
+
+        const orbPath = new Path2D();
+        orbPath.moveTo(orbSegs[0][0], orbSegs[0][1]);
+        for (const seg of orbSegs) orbPath.bezierCurveTo(seg[2], seg[3], seg[4], seg[5], seg[6], seg[7]);
+        orbPath.closePath();
+
+        // Flatten the orb's beziers into points with cumulative distances, so a
+        // light's position along the ring is a simple arc-length lookup.
+        function measure(points) {
+          const cum = [0];
+          for (let i = 1; i < points.length; i++) {
+            cum.push(cum[i - 1] + Math.hypot(points[i][0] - points[i - 1][0],
+                                             points[i][1] - points[i - 1][1]));
+          }
+          return { points, cum, total: cum[cum.length - 1] };
+        }
+        const orbPoints = [];
+        for (const seg of orbSegs) {
+          for (let j = (orbPoints.length ? 1 : 0); j <= 48; j++) {
+            const t = j / 48, m = 1 - t;
+            orbPoints.push([
+              m * m * m * seg[0] + 3 * m * m * t * seg[2] + 3 * m * t * t * seg[4] + t * t * t * seg[6],
+              m * m * m * seg[1] + 3 * m * m * t * seg[3] + 3 * m * t * t * seg[5] + t * t * t * seg[7],
+            ]);
+          }
+        }
+        const orbTab = measure(orbPoints);
+        const upTab = measure(upperTri.concat([upperTri[0]]));
+        const loTab = measure(lowerTri.concat([lowerTri[0]]));
+
+        return {
+          cx, cy, r, ext,
+          orbPath,
+          upper: { tri: upperTri, face: polygon(upperTri), back: polygon(offset(upperTri)) },
+          lower: { tri: lowerTri, face: polygon(lowerTri), back: polygon(offset(lowerTri)) },
+          paths: [orbTab, orbTab, upTab, loTab],
+          corners: upperTri.concat(lowerTri),
+        };
+      }
+
+      function pointAt(tab, distance) {
+        let d = distance % tab.total;
+        if (d < 0) d += tab.total;
+        let n = 1;
+        while (n < tab.cum.length - 1 && tab.cum[n] < d) n++;
+        const span = tab.cum[n] - tab.cum[n - 1];
+        const f = span > 1e-6 ? (d - tab.cum[n - 1]) / span : 0;
+        return [tab.points[n - 1][0] + (tab.points[n][0] - tab.points[n - 1][0]) * f,
+                tab.points[n - 1][1] + (tab.points[n][1] - tab.points[n - 1][1]) * f];
+      }
+
+      // A soft radial dot, prebuilt once and stamped wherever a light needs a glow.
+      function makeSprite(size, stops) {
+        const sprite = document.createElement('canvas');
+        sprite.width = sprite.height = size;
+        const sctx = sprite.getContext('2d');
+        const g = sctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+        for (const [at, color] of stops) g.addColorStop(at, color);
+        sctx.fillStyle = g;
+        sctx.fillRect(0, 0, size, size);
+        return sprite;
+      }
+      const glowSprite = makeSprite(64, [
+        [0, 'rgba(255,255,255,0.95)'],
+        [0.3, 'rgba(226,222,244,0.45)'],
+        [1, 'rgba(200,195,230,0)'],
+      ]);
+
+      // ---- Drawing --------------------------------------------------------
+
+      function drawMark(ctx, mark, pulse) {
+        ctx.fillStyle = 'rgba(226, 222, 244, 0.01)';
+        ctx.fill(mark.orbPath);
+        ctx.lineWidth = 1.4;
+        ctx.strokeStyle = 'rgba(255, 255, 255, ' + (0.32 + 0.02 * pulse) + ')';
+        ctx.stroke(mark.orbPath);
+        drawShard(ctx, mark, mark.upper);
+        drawShard(ctx, mark, mark.lower);
+      }
+
+      // Each shard shows a faint face tint plus its back edge and side struts,
+      // clipped to the face so the depth only reads inside the glass.
+      function drawShard(ctx, mark, shard) {
+        ctx.save();
+        ctx.clip(shard.face);
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.02)';
+        ctx.fillRect(mark.cx - mark.r * 1.5, mark.cy - mark.r * 1.5, mark.r * 3, mark.r * 3);
+        ctx.lineJoin = 'round';
+        ctx.lineWidth = 0.9;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.stroke(shard.back);
+        ctx.beginPath();
+        for (const p of shard.tri) {
+          ctx.moveTo(p[0], p[1]);
+          ctx.lineTo(p[0] + mark.ext[0], p[1] + mark.ext[1]);
+        }
+        ctx.stroke();
+        ctx.restore();
+        ctx.lineWidth = 1.4;
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.45)';
+        ctx.stroke(shard.face);
+      }
+
+      // Lights roam the mark's edges: each picks a free path, sweeps a portion of
+      // it, and fades; corner sparkles flash a small cross on a loose cadence.
+      const blips = [];
+      const sparkles = [];
+      let nextBlipAt = 0;
+      let nextSparkAt = 0;
+      const recentCorners = [];
+
+      function drawLights(ctx, mark, now) {
+        if (blips.length < 3 && now >= nextBlipAt) {
+          const free = mark.paths.filter((tab) => !blips.some((b) => b.tab === tab));
+          if (free.length) {
+            const tab = free[Math.floor(Math.random() * free.length)];
+            blips.push({
+              tab,
+              start: Math.random() * tab.total,
+              length: tab.total * (0.45 + Math.random() * 0.25),
+              born: now,
+              lifetime: 4800 + Math.random() * 1800,
+              fade: 900,
+            });
+          }
+          nextBlipAt = now + 2000 + Math.random() * 2600;
+        }
+        if (sparkles.length < 3 && now >= nextSparkAt) {
+          const fresh = mark.corners.map((_, i) => i)
+              .filter((i) => recentCorners.indexOf(i) === -1);
+          const index = fresh[Math.floor(Math.random() * fresh.length)];
+          recentCorners.push(index);
+          if (recentCorners.length > 3) recentCorners.shift();
+          sparkles.push({ at: mark.corners[index], born: now, lifetime: 700 + Math.random() * 400 });
+          nextSparkAt = now + 700 + Math.random() * 1600;
+        }
+
+        ctx.save();
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineCap = 'round';
+
+        for (let i = blips.length - 1; i >= 0; i--) {
+          const blip = blips[i];
+          const age = now - blip.born;
+          if (age >= blip.lifetime + blip.fade) { blips.splice(i, 1); continue; }
+          const u = Math.min(1, age / blip.lifetime);
+          const eased = u * u * (3 - 2 * u);
+          const head = blip.start + blip.length * eased;
+          const trailFade = age > blip.lifetime ? 1 - (age - blip.lifetime) / blip.fade : 1;
+          const travel = head - blip.start;
+          const segments = Math.max(8, Math.min(30, Math.round(travel / 14)));
+          let prev = pointAt(blip.tab, head);
+          for (let j = 1; j <= segments; j++) {
+            const back = travel * (j / segments);
+            const p = pointAt(blip.tab, head - back);
+            ctx.globalAlpha = (0.3 * Math.exp(-back / 90) + 0.04) * trailFade;
+            ctx.lineWidth = 0.7 + 0.6 * Math.exp(-back / 70);
+            ctx.strokeStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.moveTo(prev[0], prev[1]);
+            ctx.lineTo(p[0], p[1]);
+            ctx.stroke();
+            prev = p;
+          }
+          if (u < 1) {
+            const p = pointAt(blip.tab, head);
+            ctx.globalAlpha = 0.32 * Math.min(1, u / 0.12) * trailFade;
+            ctx.drawImage(glowSprite, p[0] - 4, p[1] - 4, 8, 8);
+          }
+        }
+
+        for (let i = sparkles.length - 1; i >= 0; i--) {
+          const spark = sparkles[i];
+          const u = (now - spark.born) / spark.lifetime;
+          if (u >= 1) { sparkles.splice(i, 1); continue; }
+          const envelope = Math.sin(Math.PI * u);
+          const [x, y] = spark.at;
+          const reach = 6 + 4 * envelope;
+          const diag = reach * 0.55;
+          ctx.globalAlpha = envelope * 0.7;
+          ctx.drawImage(glowSprite, x - 6, y - 6, 12, 12);
+          ctx.strokeStyle = '#ffffff';
+          ctx.globalAlpha = envelope * 0.85;
+          ctx.lineWidth = 0.9;
+          ctx.beginPath();
+          ctx.moveTo(x - reach, y); ctx.lineTo(x + reach, y);
+          ctx.moveTo(x, y - reach); ctx.lineTo(x, y + reach);
+          ctx.stroke();
+          ctx.globalAlpha = envelope * 0.4;
+          ctx.lineWidth = 0.7;
+          ctx.beginPath();
+          ctx.moveTo(x - diag, y - diag); ctx.lineTo(x + diag, y + diag);
+          ctx.moveTo(x - diag, y + diag); ctx.lineTo(x + diag, y - diag);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+        ctx.globalAlpha = 1;
+      }
+
+      // ---- The starfield --------------------------------------------------
+
+      // Each star is a direction (x, y) plus a depth z that shrinks toward the
+      // viewer; its screen position is the direction divided by that depth. Each
+      // one draws as a streak from a slightly deeper copy of itself, so motion
+      // stays readable: short near the center, stretching fast toward the edges.
+      const STAR_COUNT = 180;
+      const SPEED = 0.2;
+      const TAIL = 0.045;
+      const stars = [];
+
+      function respawn(star, anywhere) {
+        let x = 0, y = 0;
+        do {
+          x = Math.random() * 2 - 1;
+          y = Math.random() * 2 - 1;
+        } while (x * x + y * y < 0.005);
+        star.x = x;
+        star.y = y;
+        star.z = anywhere ? 0.05 + Math.random() * 0.95 : 1;
+      }
+
+      for (let i = 0; i < STAR_COUNT; i++) {
+        const star = { x: 0, y: 0, z: 1 };
+        respawn(star, true);
+        stars.push(star);
+      }
+
+      function drawField(ctx, dt, width, height, focalX, focalY) {
+        const spreadX = width * 0.5;
+        const spreadY = spreadX * 0.5;
+        ctx.clearRect(0, 0, width, height);
+        ctx.globalCompositeOperation = 'lighter';
+        ctx.lineCap = 'round';
+        for (const star of stars) {
+          star.z -= SPEED * dt;
+          if (star.z <= 0.05) { respawn(star, false); continue; }
+          const px = focalX + (star.x / (star.z + TAIL)) * spreadX;
+          const py = focalY + (star.y / (star.z + TAIL)) * spreadY;
+          const qx = focalX + (star.x / star.z) * spreadX;
+          const qy = focalY + (star.y / star.z) * spreadY;
+          if (qx < -40 || qx > width + 40 || qy < -40 || qy > height + 40) {
+            respawn(star, false);
+            continue;
+          }
+          const near = Math.min(1, (1 - star.z) * 1.3);
+          ctx.globalAlpha = near * 0.18;
+          ctx.lineWidth = 0.3 + near * 1.2;
+          ctx.strokeStyle = near > 0.75 ? '#f2ecff' : '#a587ff';
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(qx, qy);
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      // ---- Wiring and the frame loop -------------------------------------
+
+      const fieldCanvas = document.getElementById('field');
+      const fieldCtx = fieldCanvas.getContext('2d');
+      const markCanvas = document.getElementById('mark');
+      const markCtx = markCanvas.getContext('2d');
+      const bloomCanvas = document.getElementById('mark-bloom');
+      const bloomCtx = bloomCanvas.getContext('2d');
+
+      let mark = null;
+      let fieldW = 0, fieldH = 0, focalX = 0, focalY = 0, heroW = 0, heroH = 0;
+
+      function resize() {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        fieldW = window.innerWidth;
+        fieldH = window.innerHeight;
+        fieldCanvas.width = fieldW * dpr;
+        fieldCanvas.height = fieldH * dpr;
+        fieldCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        const hero = document.querySelector('.hero').getBoundingClientRect();
+        heroW = hero.width;
+        heroH = hero.height;
+        for (const [canvas, ctx] of [[markCanvas, markCtx], [bloomCanvas, bloomCtx]]) {
+          canvas.width = heroW * dpr;
+          canvas.height = heroH * dpr;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        // The mark centers in the hero box; the starfield flies out of it.
+        focalX = hero.left + heroW / 2;
+        focalY = hero.top + heroH / 2;
+        mark = buildMark(heroW / 2, heroH / 2, Math.min(heroH * 0.34, 95));
+      }
+
+      let previous = 0;
+
+      function tick(now) {
+        const dt = previous ? Math.min((now - previous) / 1000, 0.05) : 0;
+        previous = now;
+
+        drawField(fieldCtx, dt, fieldW, fieldH, focalX, focalY);
+
+        markCtx.clearRect(0, 0, heroW, heroH);
+        const pulse = 1 + 0.08 * Math.sin(now / 1000 * 0.9);
+        drawMark(markCtx, mark, pulse);
+        drawLights(markCtx, mark, now);
+
+        // Copy the sharp frame onto the bloom canvas; its CSS blur does the rest.
+        bloomCtx.save();
+        bloomCtx.setTransform(1, 0, 0, 1, 0, 0);
+        bloomCtx.clearRect(0, 0, bloomCanvas.width, bloomCanvas.height);
+        bloomCtx.drawImage(markCanvas, 0, 0);
+        bloomCtx.restore();
+
+        requestAnimationFrame(tick);
+      }
+
+      addEventListener('resize', resize);
+      addEventListener('DOMContentLoaded', () => {
+        resize();
+        requestAnimationFrame(tick);
+      });
+    </script>
+  </body>
+</html>
