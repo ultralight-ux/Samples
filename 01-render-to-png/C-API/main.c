@@ -124,7 +124,7 @@ int main() {
   ///
   /// Register OnFinishLoading() with our View so we can handle its finish-loading event below.
   ///
-  ulViewSetFinishLoadingCallback(view, OnFinishLoading, 0);
+  ulViewSetFinishLoadingCallback(view, OnFinishLoading, 0, 0);
 
   ///
   /// Load a local HTML file into the View (uses the file system defined above).
