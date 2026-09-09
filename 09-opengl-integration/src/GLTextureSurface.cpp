@@ -45,18 +45,30 @@ public:
     /// Map our PBO to system memory so Ultralight can draw to it.
     ///
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo_id_);
-    void* result = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_READ_WRITE);
+    mapped_pixels_ = glMapBuffer(GL_PIXEL_UNPACK_BUFFER, GL_READ_WRITE);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
-    return result;
+    return mapped_pixels_;
   }
 
-  virtual void UnlockPixels() override { 
+  virtual void UnlockPixels() override {
     ///
     /// Unmap our PBO.
     ///
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, pbo_id_);
-    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER); 
+    glUnmapBuffer(GL_PIXEL_UNPACK_BUFFER);
     glBindBuffer(GL_PIXEL_UNPACK_BUFFER, 0);
+    mapped_pixels_ = nullptr;
+  }
+
+  virtual bool Scroll(const ultralight::IntRect& rect, int dx, int dy) override {
+    ///
+    /// Ultralight calls this while the PBO is mapped (a second map would
+    /// return null), so shift through the pointer LockPixels() returned.
+    /// Only the PBO moves; the texture is re-uploaded whole on sync.
+    ///
+    if (mapped_pixels_)
+      ultralight::Surface::ShiftPixels(mapped_pixels_, row_bytes_, rect, dx, dy);
+    return false;
   }
 
   virtual void Resize(uint32_t width, uint32_t height) override {
@@ -131,6 +143,7 @@ public:
 protected:
   GLuint texture_id_;
   GLuint pbo_id_ = 0;
+  void* mapped_pixels_ = nullptr;
   uint32_t width_;
   uint32_t height_;
   uint32_t row_bytes_;
@@ -190,6 +203,12 @@ public:
   virtual void* LockPixels() override { return bitmap_->LockPixels(); }
 
   virtual void UnlockPixels() override { return bitmap_->UnlockPixels(); }
+
+  virtual bool Scroll(const ultralight::IntRect& rect, int dx, int dy) override {
+    // Ultralight holds the pixel lock while calling this; only the bitmap moves.
+    ultralight::Surface::ShiftPixels(bitmap_->raw_pixels(), row_bytes(), rect, dx, dy);
+    return false;
+  }
 
   virtual void Resize(uint32_t width, uint32_t height) override {
     if (bitmap_ && bitmap_->width() == width && bitmap_->height() == height)
