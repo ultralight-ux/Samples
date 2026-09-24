@@ -267,10 +267,9 @@ void UI::AddTabElement(uint64_t id, const String& title) {
   dom::Element close = doc_.createElement("span");
   close.classList.add("tab-close");
 
-  // The appends can only fail once the page is gone; their results are discarded.
-  (void)tab.appendChild(label);
-  (void)tab.appendChild(close);
-  (void)tab_strip_.appendChild(tab);
+  tab.appendChild(label);
+  tab.appendChild(close);
+  tab_strip_.appendChild(tab);
 
   tab_elements_[id] = { tab, label };
 }
