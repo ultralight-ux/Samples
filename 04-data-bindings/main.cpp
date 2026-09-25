@@ -97,7 +97,8 @@ static void RunSimulationThread(View* view, std::atomic<bool>& quit) {
             .OnChange<"name">([&](std::string_view v) { dash.name = v; })
             .OnAction<"reset">([&] { dash.requests = 0; });
 
-  ctx.AttachTo(*view);
+  if (!ctx.AttachTo(view))
+    return;
 
   ///
   /// The simulation just mutates members and calls Sync(). Nothing here knows about the page.
@@ -115,7 +116,7 @@ static void RunSimulationThread(View* view, std::atomic<bool>& quit) {
     std::this_thread::sleep_for(std::chrono::milliseconds(16));
   }
 
-  ctx.DetachFrom(*view);
+  ctx.DetachFrom(view);
 }
 
 class MyApp : public WindowListener {
