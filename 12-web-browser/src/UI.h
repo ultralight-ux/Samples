@@ -11,7 +11,7 @@ using namespace ultralight;
 /// Browser chrome: the tab strip and toolbar rendered as one script-free HTML page in a
 /// fixed-height panel at the top of the window.
 ///
-/// All wiring is native: dom::Listeners routes the page's clicks and key presses to the
+/// All wiring is native: dom::Triggers routes the page's clicks and key presses to the
 /// methods below, and state flows back through held element handles (the tab strip's
 /// elements are created and updated with the DOM API directly, so the page needs no
 /// script of its own).
@@ -80,7 +80,7 @@ class UI : public WindowListener {
   uint64_t active_tab_id_ = kNoTab;
   uint64_t tab_id_counter_ = 0;
 
-  dom::Listeners listeners_;
+  dom::Triggers listeners_;
 
   // Held chrome-page handles. The chrome page never navigates, so these stay valid for
   // the life of the window.

@@ -32,7 +32,7 @@ using namespace ultralight;
 /// query, and the menu can pin a theme instead: we pin the material (BackdropOptions) and
 /// the page (View::set_preferred_color_scheme) together so they always agree.
 ///
-/// The chrome pages run no script of their own; dom::Listeners wires their buttons to the
+/// The chrome pages run no script of their own; dom::Triggers wires their buttons to the
 /// native methods below.
 ///
 
@@ -46,8 +46,8 @@ class MyApp : public WindowListener {
   RefPtr<Window> menu_;
   RefPtr<Panel> menu_panel_;
 
-  dom::Listeners chrome_listeners_;
-  dom::Listeners menu_listeners_;
+  dom::Triggers chrome_listeners_;
+  dom::Triggers menu_listeners_;
 
   ///
   /// Held page handles: the root elements receive window-state classes and the current

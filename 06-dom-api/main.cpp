@@ -23,7 +23,7 @@ using namespace ultralight;
 /// along with CSS selectors and consteval CSS unit parsing so you can write code that looks
 /// like JavaScript but runs natively.
 ///
-/// We'll register all of our page wiring once in a dom::Listeners registry and attach it to
+/// We'll register all of our page wiring once in a dom::Triggers registry and attach it to
 /// our View: every page the View loads gets the wiring automatically, so there is nothing to
 /// re-register across navigations.
 ///
@@ -37,7 +37,7 @@ class MyApp : public WindowListener {
   ///
   /// The page wiring (delegated listeners + DOM-ready hooks), registered once below.
   ///
-  dom::Listeners page_;
+  dom::Triggers page_;
 
   ///
   /// Handles to the elements we keep updating. Handles are identity, not lifetime: if the
