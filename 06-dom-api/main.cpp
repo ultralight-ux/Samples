@@ -27,7 +27,8 @@ using namespace ultralight;
 /// our View: every page the View loads gets the wiring automatically, so there is nothing to
 /// re-register across navigations.
 ///
-/// Our page is a small settings panel with a toggle, a select, and a slider.
+/// Our page is a small settings panel with a toggle, a dropdown, and a slider. The dropdown is
+/// built from plain elements, so we write its behavior here in native code too.
 ///
 class MyApp : public WindowListener {
   RefPtr<App> app_;
@@ -46,6 +47,7 @@ class MyApp : public WindowListener {
   ///
   dom::Element notifications_;
   dom::Element quality_;
+  dom::Element quality_label_;
   dom::Element volume_;
   dom::Element volume_fill_;
   dom::Element summary_;
@@ -76,11 +78,25 @@ public:
     /// Wire the page to C++ lambdas by CSS selector.
     ///
     page_.On("#notifications", "change", [this] { OnSettingsChanged(); });
-    page_.On("#quality", "change", [this] { OnSettingsChanged(); });
     page_.On("#volume", "input", [this] { OnSettingsChanged(); });
     page_.On("#save", "click", [this] {
       status_.textContent = "Settings saved.";
       status_.classList.toggle("dirty", false);
+    });
+
+    ///
+    /// The quality dropdown: its button opens and closes the menu, an option records the
+    /// choice, and a press anywhere outside the dropdown (or the Escape key) closes it.
+    ///
+    page_.On(".dropdown-button", "click", [this] { quality_.classList.toggle("open"); });
+    page_.On(".option", "click", [this](dom::Element option) { SelectQuality(option); });
+    page_.On("html", "mousedown", [this](dom::Event event, dom::Element) {
+      if (!event.target().closest("#quality"))
+        quality_.classList.toggle("open", false);
+    });
+    page_.On("html", "keydown", [this](dom::Event event, dom::Element) {
+      if (event.AsKeyboard().key() == "Escape")
+        quality_.classList.toggle("open", false);
     });
 
     ///
@@ -89,6 +105,7 @@ public:
     page_.OnDOMReady([this](dom::Document doc) {
       notifications_ = doc.getElementById("notifications");
       quality_ = doc.getElementById("quality");
+      quality_label_ = doc.getElementById("quality-label");
       volume_ = doc.getElementById("volume");
       volume_fill_ = doc.getElementById("volume-fill");
       summary_ = doc.getElementById("summary");
@@ -120,10 +137,11 @@ public:
   ///
   void RefreshSummary() {
     ///
-    /// Form state reads use the same names page script would: `checked` and `value`.
+    /// Form state reads use the same names page script would: `checked`, `value`, and
+    /// `dataset` (the dropdown keeps its choice in a data-value attribute).
     ///
     bool notify = notifications_.checked;
-    std::string quality(quality_.value);
+    std::string quality(quality_.dataset["value"]);
     std::string volume(volume_.value);
 
     ///
@@ -135,6 +153,21 @@ public:
     std::string text = "Notifications " + std::string(notify ? "on" : "off") + "  /  "
                        + quality + " quality  /  Volume " + volume + "%";
     summary_.textContent = text.c_str();
+  }
+
+  ///
+  /// Called when the user picks a quality option: mark it selected, record its value on the
+  /// dropdown, show it on the button, and close the menu.
+  ///
+  void SelectQuality(dom::Element option) {
+    for (dom::Element item : quality_.querySelectorAll(".option"))
+      item.classList.toggle("selected", item.IsSame(option));
+
+    std::string value(option.dataset["value"]);
+    quality_.dataset["value"] = value.c_str();
+    quality_label_.textContent = value.c_str();
+    quality_.classList.toggle("open", false);
+    OnSettingsChanged();
   }
 
   ///

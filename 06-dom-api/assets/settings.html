@@ -5,36 +5,17 @@
     <title>Settings</title>
     <!-- This page runs no JavaScript: the application drives it through the native DOM API. -->
     <style>
-      /* Ultralight sample design tokens, v2 (native-adaptive) */
       :root {
-        --bg: #eef0f5;         /* window ground */
-        --panel: #ffffff;      /* card / pane surface */
-        --panel-2: #f6f7fa;    /* inset surface (inputs, code, table heads) */
-        --text: #1b2030;
-        --muted: #6b7186;
-        --border: #e1e4ec;
-        --accent: #3b6cf6;     /* primary action / selection */
-        --accent-2: #7c3aed;   /* gradient partner, secondary series */
-        --ok: #18a058;  --warn: #e8a317;  --bad: #e5484d;
-        --sel: rgba(59, 108, 246, 0.12);   /* selection wash + focus ring */
-        --shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
-        --shadow-pop: 0 12px 28px rgba(16, 24, 40, 0.16);
-      }
-
-      /* The page follows the OS light/dark theme. Ultralight feeds the system
-         theme to this media query, so the swap below happens live with no
-         JavaScript. Note the page styles its own controls: built-in form
-         controls always render with their light appearance. */
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0f1117;  --panel: #171a23;  --panel-2: #1d2130;
-          --text: #e6e8ef;  --muted: #8b91a6;  --border: #2a2f40;
-          --accent: #4f8cff;  --accent-2: #a78bfa;
-          --ok: #3ecf8e;  --warn: #ffb648;  --bad: #ff5c6c;
-          --sel: rgba(79, 140, 255, 0.18);
-          --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-          --shadow-pop: 0 14px 36px rgba(0, 0, 0, 0.5);
-        }
+        --text: rgba(242, 241, 251, 0.9);
+        --muted: rgba(242, 241, 251, 0.55);
+        --hairline: rgba(255, 255, 255, 0.1);
+        --fill: rgba(255, 255, 255, 0.05);
+        --fill-hover: rgba(255, 255, 255, 0.09);
+        --track: rgba(255, 255, 255, 0.16);
+        --accent: #8b7bff;
+        --accent-2: #5b8cff;
+        --button: #6d4cf5;
+        --warn: #ffb648;
       }
 
       html, body {
@@ -42,61 +23,46 @@
         height: 100%;
       }
 
+      /* The generic sans-serif family is Arial on Windows, so we name the fonts we
+         want and let each platform pick the first one it has. */
       body {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--bg);
-        color: var(--text);
-        font-family: sans-serif;
+        font-family: "Segoe UI Variable Text", "SF Pro Text", "Segoe UI", Inter,
+                     "Helvetica Neue", sans-serif;
         font-size: 13px;
         line-height: 1.4;
+        color: var(--text);
         cursor: default;
         -webkit-user-select: none;
         overflow: hidden;
+        background-color: #0a0b1c;
+        background-image:
+          radial-gradient(at 15% 20%, rgba(150, 70, 235, 0.26), transparent 50%),
+          radial-gradient(at 90% 35%, rgba(70, 110, 240, 0.22), transparent 50%),
+          radial-gradient(at 50% 105%, rgba(72, 60, 225, 0.22), transparent 55%);
       }
 
-      /* A soft accent wash behind the card keeps the ground from reading flat. */
-      .wash {
-        position: fixed;
-        inset: 0;
-        background:
-          radial-gradient(600px 380px at 30% 20%,
-                          color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-          radial-gradient(520px 360px at 75% 85%,
-                          color-mix(in srgb, var(--accent-2) 8%, transparent), transparent 70%);
-      }
-
+      /* A frosted glass panel: a faint white fill, a hairline edge with a brighter
+         top highlight, and a blur of the washes behind it. */
       .card {
-        position: relative;
         width: 384px;
         padding: 28px;
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        box-shadow: var(--shadow);
-        transition: box-shadow 200ms ease-out;
-      }
-
-      /* The card lifts while any control inside it has focus (:has() plus a
-         transition, no script). */
-      .card:has(:focus) {
-        box-shadow: var(--shadow-pop);
-      }
-
-      .kicker {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
-        color: var(--muted);
+        border-radius: 28px;
+        background-color: rgba(255, 255, 255, 0.07);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.11),
+                    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+                    inset 0 0 32px rgba(255, 255, 255, 0.05);
+        backdrop-filter: saturate(1.8) brightness(1.03) blur(20px);
       }
 
       h1 {
-        margin: 8px 0 4px;
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: -0.02em;
+        margin: 0 0 4px;
+        font-family: "Segoe UI Variable Display", "SF Pro Display", "Segoe UI", Inter,
+                     "Helvetica Neue", sans-serif;
+        font-size: 28px;
+        font-weight: 300;
       }
 
       .lede {
@@ -105,9 +71,9 @@
       }
 
       .rows {
-        background: var(--panel-2);
-        border: 1px solid var(--border);
-        border-radius: 12px;
+        background: var(--fill);
+        border-radius: 16px;
+        box-shadow: inset 0 0 0 1px var(--hairline);
       }
 
       .row {
@@ -115,30 +81,15 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        padding: 12px 14px;
-        transition: background-color 160ms ease-out;
+        padding: 14px 16px;
       }
 
       .row + .row {
-        border-top: 1px solid var(--border);
-      }
-
-      .row:first-child { border-radius: 11px 11px 0 0; }
-      .row:last-child  { border-radius: 0 0 11px 11px; }
-
-      /* The row washes itself while its control has focus. */
-      .row:has(:focus) {
-        background: var(--sel);
+        border-top: 1px solid var(--hairline);
       }
 
       .row label {
         font-weight: 600;
-        transition: color 160ms ease-out;
-      }
-
-      /* The switch row's title picks up the accent while the switch is on. */
-      .row:has(.switch:checked) label {
-        color: var(--accent);
       }
 
       .row-text {
@@ -156,32 +107,34 @@
       .switch {
         -webkit-appearance: none;
         appearance: none;
-        position: relative;
+        display: flex;
+        align-items: center;
         width: 40px;
         height: 24px;
         margin: 0;
+        padding: 0 3px;
+        box-sizing: border-box;
         flex-shrink: 0;
-        background: color-mix(in srgb, var(--muted) 30%, var(--border));
+        background: var(--track);
+        border: none;
         border-radius: 999px;
         cursor: pointer;
-        transition: background-color 160ms ease-out, box-shadow 160ms ease-out;
+        transition: background-color 160ms ease-out;
       }
 
+      /* The knob is a flex item, so it stays centered in the track at any scale. */
       .switch::before {
         content: "";
-        position: absolute;
-        top: 3px;
-        left: 3px;
         width: 18px;
         height: 18px;
         background: #ffffff;
         border-radius: 50%;
-        box-shadow: 0 1px 3px rgba(16, 24, 40, 0.35);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
         transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1);
       }
 
       .switch:checked {
-        background: var(--accent);
+        background: var(--button);
       }
 
       .switch:checked::before {
@@ -190,43 +143,101 @@
 
       .switch:focus {
         outline: none;
-        box-shadow: 0 0 0 3px var(--sel);
       }
 
-      /* A select styled to match the page; the arrow is inline SVG layered over
-         it so it can follow the theme (the built-in face never darkens). */
-      .select {
+      /* A dropdown built from plain elements. The application opens and closes it
+         by toggling the "open" class, and records the choice in data-value. */
+      .dropdown {
         position: relative;
-        display: inline-flex;
-        align-items: center;
         flex-shrink: 0;
       }
 
-      .select svg {
-        position: absolute;
-        right: 11px;
-        color: var(--muted);
-        pointer-events: none;
+      .dropdown.open {
+        z-index: 1;
       }
 
-      select {
-        -webkit-appearance: none;
-        appearance: none;
+      .dropdown-button {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        min-width: 116px;
+        padding: 7px 12px;
         font: inherit;
         color: var(--text);
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 8px;
-        padding: 6px 30px 6px 12px;
-        min-width: 110px;
+        background: var(--fill);
+        border: none;
+        border-radius: 10px;
+        box-shadow: inset 0 0 0 1px var(--hairline);
         cursor: pointer;
-        transition: border-color 160ms ease-out, box-shadow 160ms ease-out;
+        transition: background-color 160ms ease-out;
       }
 
-      select:focus {
+      .dropdown-button:hover,
+      .dropdown.open .dropdown-button {
+        background: var(--fill-hover);
+      }
+
+      .dropdown-button:focus {
         outline: none;
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px var(--sel);
+      }
+
+      .dropdown-button svg {
+        color: var(--muted);
+        transition: transform 160ms ease-out;
+      }
+
+      .dropdown.open .dropdown-button svg {
+        transform: rotate(180deg);
+      }
+
+      .menu {
+        position: absolute;
+        top: calc(100% + 6px);
+        right: 0;
+        min-width: 100%;
+        padding: 5px;
+        box-sizing: border-box;
+        border-radius: 12px;
+        background: rgba(28, 26, 56, 0.72);
+        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12),
+                    0 12px 32px rgba(0, 0, 0, 0.45);
+        backdrop-filter: blur(16px);
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-4px);
+        transition: opacity 140ms ease-out, transform 140ms ease-out, visibility 140ms;
+      }
+
+      .dropdown.open .menu {
+        opacity: 1;
+        visibility: visible;
+        transform: none;
+      }
+
+      .option {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 6px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+
+      .option:hover {
+        background: var(--fill-hover);
+      }
+
+      /* A check mark on the selected option, drawn with two borders. */
+      .option.selected::after {
+        content: "";
+        width: 4px;
+        height: 8px;
+        margin: -2px 2px 0 0;
+        border: solid var(--accent);
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
       }
 
       .row-volume {
@@ -248,7 +259,7 @@
       input[type="range"]::-webkit-slider-runnable-track {
         height: 4px;
         border-radius: 999px;
-        background: color-mix(in srgb, var(--muted) 30%, var(--border));
+        background: var(--track);
       }
 
       input[type="range"]::-webkit-slider-thumb {
@@ -256,10 +267,10 @@
         width: 16px;
         height: 16px;
         margin-top: -6px;
-        background: var(--accent);
-        border: 2px solid #ffffff;
+        background: #ffffff;
+        border: 3px solid var(--accent);
         border-radius: 50%;
-        box-shadow: 0 1px 3px rgba(16, 24, 40, 0.35);
+        box-sizing: border-box;
         cursor: pointer;
       }
 
@@ -267,15 +278,11 @@
         outline: none;
       }
 
-      input[type="range"]:focus::-webkit-slider-thumb {
-        box-shadow: 0 0 0 3px var(--sel), 0 1px 3px rgba(16, 24, 40, 0.35);
-      }
-
       /* The bar the application resizes natively as the slider moves. */
       .meter {
         width: 72px;
         height: 6px;
-        background: color-mix(in srgb, var(--muted) 30%, var(--border));
+        background: var(--track);
         border-radius: 999px;
         overflow: hidden;
       }
@@ -293,7 +300,7 @@
         align-items: center;
         justify-content: space-between;
         gap: 12px;
-        margin-top: 16px;
+        margin-top: 18px;
       }
 
       /* The dot is drawn with currentColor, so the native "dirty" class toggle
@@ -320,52 +327,41 @@
       }
 
       .btn {
-        padding: 8px 16px;
+        padding: 9px 20px;
         font: inherit;
         font-weight: 600;
         color: #ffffff;
-        background: var(--accent);
+        background: var(--button);
         border: none;
-        border-radius: 8px;
-        box-shadow: var(--shadow);
+        border-radius: 12px;
         cursor: pointer;
-        transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
-                    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
-                    background-color 160ms ease-out;
+        transition: background-color 160ms ease-out;
       }
 
       .btn:hover {
-        background: color-mix(in srgb, var(--accent), #ffffff 10%);
-        box-shadow: var(--shadow-pop);
-        transform: translateY(-2px);
+        background: #7b5cff;
       }
 
       .btn:active {
-        background: color-mix(in srgb, var(--accent), #000000 12%);
-        box-shadow: var(--shadow);
-        transform: translateY(0);
+        background: #5b3ce0;
       }
 
-      .btn:focus-visible {
+      .btn:focus {
         outline: none;
-        box-shadow: 0 0 0 3px var(--sel), var(--shadow);
       }
 
       /* The application writes the summary text natively; the page only styles it. */
       .readout {
-        margin-top: 16px;
+        margin-top: 18px;
         padding: 12px 14px;
-        background: var(--panel-2);
-        border: 1px solid var(--border);
-        border-radius: 8px;
+        background: var(--fill);
+        border-radius: 12px;
+        box-shadow: inset 0 0 0 1px var(--hairline);
       }
 
       .readout-label {
         margin-bottom: 5px;
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+        font-size: 12px;
         color: var(--muted);
       }
 
@@ -373,7 +369,6 @@
         min-height: 17px;
         font-family: monospace;
         font-size: 12px;
-        font-variant-numeric: tabular-nums;
         white-space: pre-wrap;
       }
 
@@ -384,9 +379,7 @@
     </style>
   </head>
   <body>
-    <div class="wash"></div>
     <div class="card">
-      <div class="kicker">Ultralight &middot; DOM API</div>
       <h1>Settings</h1>
       <p class="lede">This page contains no JavaScript. Every read, write, and listener below
         is native code.</p>
@@ -402,19 +395,22 @@
 
         <div class="row">
           <div class="row-text">
-            <label for="quality">Quality</label>
+            <label>Quality</label>
             <span class="hint">Rendering quality preset.</span>
           </div>
-          <span class="select">
-            <select id="quality">
-              <option>Low</option>
-              <option selected>Medium</option>
-              <option>High</option>
-            </select>
-            <svg width="10" height="6" viewBox="0 0 10 6">
-              <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2"/>
-            </svg>
-          </span>
+          <div class="dropdown" id="quality" data-value="Medium">
+            <button class="dropdown-button">
+              <span id="quality-label">Medium</span>
+              <svg width="10" height="6" viewBox="0 0 10 6">
+                <path d="M1 1l4 4 4-4" fill="none" stroke="currentColor" stroke-width="2"/>
+              </svg>
+            </button>
+            <div class="menu">
+              <div class="option" data-value="Low">Low</div>
+              <div class="option selected" data-value="Medium">Medium</div>
+              <div class="option" data-value="High">High</div>
+            </div>
+          </div>
         </div>
 
         <div class="row row-volume">

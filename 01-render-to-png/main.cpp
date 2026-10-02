@@ -19,7 +19,7 @@ using namespace ultralight;
 ///   2. Create the Renderer.
 ///   3. Create our View.
 ///   4. Load a local file into the View.
-///   5. Wait for it to load using our own main loop.
+///   5. Run our own main loop until the page settles.
 ///   6. Render the View.
 ///   7. Get the rendered Bitmap and save it to a PNG.
 ///
@@ -106,7 +106,7 @@ public:
     view_ = renderer_->CreateView(1600, 800, view_config, nullptr);
 
     ///
-    /// Register our MyApp instance as a LoadListener so we can handle the View's OnFinishLoading
+    /// Register our MyApp instance as a LoadListener so we can handle the View's OnPageSettled
     /// event below.
     ///
     view_->set_load_listener(this);
@@ -115,8 +115,8 @@ public:
     /// Load a local HTML file into the View (uses the file system defined above).
     ///
     /// @note:
-    ///   This operation may not complete immediately-- we will call Renderer::Update continuously
-    ///   and wait for the OnFinishLoading event before rendering our View.
+    ///   This operation may not complete immediately-- we will run our main loop below and wait
+    ///   for the OnPageSettled event before saving our View.
     ///
     /// Views can also load remote URLs, try replacing the code below with:
     ///
@@ -131,28 +131,27 @@ public:
   }
 
   void Run() {
-    LogMessage(LogLevel::Info, "Starting Run(), waiting for page to load...");
+    LogMessage(LogLevel::Info, "Starting Run(), waiting for page to settle...");
 
     ///
-    /// Continuously update until OnFinishLoading() is called below (which sets done = true).
+    /// Run our main loop until OnPageSettled() is called below (which sets done = true).
     ///
     /// @note:
-    ///   Calling Renderer::Update handles any pending network requests, resource loads, and 
-    ///   JavaScript timers.
+    ///   Renderer::Update handles any pending network requests, resource loads, and JavaScript
+    ///   timers. Renderer::RefreshDisplay and Renderer::Render run the page's rendering updates
+    ///   and paint it to the View's Surface. A page only settles once it has been painted, so
+    ///   we call all three on every pass.
     ///
+    /// Some pages never settle (eg, ones with constant network or layout activity), so we also
+    /// give up waiting after 10 seconds and save whatever has been painted so far.
+    ///
+    auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(10);
     do {
       renderer_->Update();
+      renderer_->RefreshDisplay(0);
+      renderer_->Render();
       std::this_thread::sleep_for(std::chrono::milliseconds(10));
-    } while (!done_);
-
-    ///
-    /// Render our View.
-    /// 
-    /// @note:
-    ///   Calling Renderer::Render will render any dirty Views to their respective Surfaces.
-    /// 
-    renderer_->RefreshDisplay(0);
-    renderer_->Render();
+    } while (!done_ && std::chrono::steady_clock::now() < deadline);
 
     ///
     /// Get our View's rendering surface and cast it to BitmapSurface.
@@ -176,21 +175,19 @@ public:
   }
 
   ///
-  /// Inherited from LoadListener, this is called when a View finishes loading a page into a frame.
+  /// Inherited from LoadListener, this is called once the page has loaded and its layout has
+  /// gone quiet, so it's ready to capture.
   ///
-  virtual void OnFinishLoading(ultralight::View* caller, uint64_t frame_id, bool is_main_frame,
-                               const String& url) override {
-    ///
-    /// Our page is done when the main frame finishes loading.
-    ///
-    if (is_main_frame) {
-      LogMessage(LogLevel::Info, "Our page has loaded!");
+  /// We wait for this instead of OnFinishLoading(): a page can keep loading resources and
+  /// changing its layout after the load itself finishes.
+  ///
+  virtual void OnPageSettled(ultralight::View* caller, const String& url) override {
+    LogMessage(LogLevel::Info, "Our page has settled!");
 
-      ///
-      /// Set our done flag to true to exit the Run loop.
-      ///
-      done_ = true;
-    }
+    ///
+    /// Set our done flag to true to exit the Run loop.
+    ///
+    done_ = true;
   }
 
   ///

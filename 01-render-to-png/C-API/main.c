@@ -21,7 +21,7 @@
 ///   2. Create the Renderer.
 ///   3. Create our View.
 ///   4. Load a local file into the View.
-///   5. Wait for it to load using our own main loop.
+///   5. Run our own main loop until the page settles.
 ///   6. Render the View.
 ///   7. Get the rendered Bitmap and save it to a PNG.
 ///
@@ -31,9 +31,8 @@
 
 bool done = false;
 
-/// Forward declaration of our load callback.
-void OnFinishLoading(void* user_data, ULView caller, unsigned long long frame_id,
-                     bool is_main_frame, ULString url);
+/// Forward declaration of our page-settled callback.
+void OnPageSettled(void* user_data, ULView caller, ULString url);
 
 /// Forward declaration of our logger callback.
 void LogMessage(ULLogLevel log_level, ULString message);
@@ -122,16 +121,16 @@ int main() {
   ulDestroyViewConfig(view_config);
 
   ///
-  /// Register OnFinishLoading() with our View so we can handle its finish-loading event below.
+  /// Register OnPageSettled() with our View so we can handle its page-settled event below.
   ///
-  ulViewSetFinishLoadingCallback(view, OnFinishLoading, 0, 0);
+  ulViewSetPageSettledCallback(view, OnPageSettled, 0, 0);
 
   ///
   /// Load a local HTML file into the View (uses the file system defined above).
   ///
   /// @note:
-  ///   This operation may not complete immediately-- we will call ulUpdate() continuously
-  ///   and wait for the OnFinishLoading event before rendering our View.
+  ///   This operation may not complete immediately-- we will run our main loop below and wait
+  ///   for the page-settled event before saving our View.
   ///
   /// Views can also load remote URLs, try replacing the code below with:
   ///
@@ -143,28 +142,27 @@ int main() {
   ulViewLoadURL(view, url_string);
   ulDestroyString(url_string);
 
-  Log("Starting Run(), waiting for page to load...");
+  Log("Starting Run(), waiting for page to settle...");
 
   ///
-  /// Continuously update until OnFinishLoading() is called below (which sets done = true).
+  /// Run our main loop until OnPageSettled() is called below (which sets done = true).
   ///
   /// @note:
-  ///   Calling ulUpdate() handles any pending network requests, resource loads, and
-  ///   JavaScript timers.
+  ///   ulUpdate() handles any pending network requests, resource loads, and JavaScript timers.
+  ///   ulRefreshDisplay() and ulRender() run the page's rendering updates and paint it to the
+  ///   View's surface. A page only settles once it has been painted, so we call all three on
+  ///   every pass.
   ///
+  /// Some pages never settle (eg, ones with constant network or layout activity), so we also
+  /// give up waiting after about 10 seconds (1000 passes) and save whatever has been painted.
+  ///
+  int passes = 0;
   do {
     ulUpdate(renderer);
+    ulRefreshDisplay(renderer, 0);
+    ulRender(renderer);
     sleep_ms(10);
-  } while (!done);
-
-  ///
-  /// Render our View.
-  ///
-  /// @note:
-  ///   Calling ulRender() will render any dirty Views to their respective Surfaces.
-  ///
-  ulRefreshDisplay(renderer, 0);
-  ulRender(renderer);
+  } while (!done && ++passes < 1000);
 
   ///
   /// Get our View's rendering surface.
@@ -198,21 +196,19 @@ int main() {
 }
 
 ///
-/// This is called when a View finishes loading a page into a frame.
+/// This is called once the page has loaded and its layout has gone quiet, so it's ready to
+/// capture.
 ///
-void OnFinishLoading(void* user_data, ULView caller, unsigned long long frame_id,
-                     bool is_main_frame, ULString url) {
-  ///
-  /// Our page is done when the main frame finishes loading.
-  ///
-  if (is_main_frame) {
-    Log("Our page has loaded!");
+/// We wait for this instead of the finish-loading callback: a page can keep loading resources
+/// and changing its layout after the load itself finishes.
+///
+void OnPageSettled(void* user_data, ULView caller, ULString url) {
+  Log("Our page has settled!");
 
-    ///
-    /// Set our done flag to true to exit the update loop.
-    ///
-    done = true;
-  }
+  ///
+  /// Set our done flag to true to exit the main loop.
+  ///
+  done = true;
 }
 
 ///
