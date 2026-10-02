@@ -44,9 +44,10 @@ public:
     app_ = App::Create();
 
     ///
-    /// Create our Window using default window flags.
+    /// Create our Window, hidden until its page is ready (see ShowWhenReady() below).
     ///
-    window_ = Window::Create(app_->main_monitor(), 450, 700, false, WindowFlags::Titled);
+    window_ = Window::Create(app_->main_monitor(), 450, 700, false,
+                             WindowFlags::Titled | WindowFlags::Hidden);
 
     ///
     /// Set the title of our window.
@@ -66,6 +67,12 @@ public:
     ///  **IMPORTANT**: Make sure `file:///` has three (3) forward slashes.
     ///
     panel_->view()->LoadURL("file:///app.html");
+
+    ///
+    /// Show the window once the page has loaded and settled, so the first frame on screen is
+    /// the finished page instead of a blank window.
+    ///
+    window_->ShowWhenReady();
   }
 
   virtual ~MyApp() {}

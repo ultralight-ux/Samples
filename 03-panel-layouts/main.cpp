@@ -44,10 +44,10 @@ public:
     app_ = App::Create();
 
     ///
-    /// Create our Window.
+    /// Create our Window, hidden until its pages are ready (see ShowWhenReady() below).
     ///
     window_ = Window::Create(app_->main_monitor(), 900, 600, false,
-                             WindowFlags::Titled | WindowFlags::Resizable);
+                             WindowFlags::Titled | WindowFlags::Resizable | WindowFlags::Hidden);
     window_->SetTitle("Ultralight Sample 3 - Panel Layouts");
     window_->set_listener(this);
 
@@ -97,6 +97,12 @@ public:
     sidebar_->view()->LoadURL("file:///sidebar.html");
     content_->view()->LoadURL("file:///content.html");
     status_->view()->LoadURL("file:///status.html");
+
+    ///
+    /// Show the window once all four pages have loaded and settled, so the first frame on
+    /// screen is the finished layout instead of blank panes.
+    ///
+    window_->ShowWhenReady();
   }
 
   virtual ~MyApp() {}

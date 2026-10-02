@@ -64,10 +64,11 @@ void Init() {
   ulDestroyConfig(config);
 
   ///
-  /// Create our window, make it 500x500 with a titlebar and resize handles.
+  /// Create our window, make it 500x500 with a titlebar and resize handles. It starts hidden
+  /// until our page is ready (see ulWindowShowWhenReady() below).
   ///
   window = ulCreateWindow(ulAppGetMainMonitor(app), 500, 500, false,
-    kWindowFlags_Titled | kWindowFlags_Resizable);
+    kWindowFlags_Titled | kWindowFlags_Resizable | kWindowFlags_Hidden);
 
   ///
   /// Set our window title.
@@ -128,6 +129,12 @@ void Init() {
   ULString url = ulCreateString("file:///app.html");
   ulViewLoadURL(view, url);
   ulDestroyString(url);
+
+  ///
+  /// Show the window once the page has loaded and settled (or after half a second, whichever
+  /// comes first), so the first frame on screen is the finished page instead of a blank window.
+  ///
+  ulWindowShowWhenReady(window, 0.5);
 }
 
 ///

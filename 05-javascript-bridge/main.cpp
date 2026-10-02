@@ -57,9 +57,10 @@ public:
     app_->set_listener(this);
 
     ///
-    /// Create our Window.
+    /// Create our Window, hidden until its page is ready (see ShowWhenReady() below).
     ///
-    window_ = Window::Create(app_->main_monitor(), 520, 560, false, WindowFlags::Titled);
+    window_ = Window::Create(app_->main_monitor(), 520, 560, false,
+                             WindowFlags::Titled | WindowFlags::Hidden);
     window_->SetTitle("Ultralight Sample 5 - JavaScript Bridge");
     window_->set_listener(this);
 
@@ -108,6 +109,12 @@ public:
     ///
     if (api_.AttachTo(panel_->view().get()))
       panel_->view()->LoadURL("file:///app.html");
+
+    ///
+    /// Show the window once the page has loaded and settled, so the first frame on screen is
+    /// the finished page instead of a blank window.
+    ///
+    window_->ShowWhenReady();
   }
 
   virtual ~MyApp() {}

@@ -58,9 +58,10 @@ public:
     app_ = App::Create();
 
     ///
-    /// Create our Window.
+    /// Create our Window, hidden until its page is ready (see ShowWhenReady() below).
     ///
-    window_ = Window::Create(app_->main_monitor(), 490, 566, false, WindowFlags::Titled);
+    window_ = Window::Create(app_->main_monitor(), 490, 566, false,
+                             WindowFlags::Titled | WindowFlags::Hidden);
     window_->SetTitle("Ultralight Sample 6 - DOM API");
     window_->set_listener(this);
 
@@ -103,6 +104,13 @@ public:
     ///
     if (page_.AttachTo(panel_->view().get()))
       panel_->view()->LoadURL("file:///settings.html");
+
+    ///
+    /// Show the window once the page has loaded and settled, so the first frame on screen is
+    /// the finished form (with the summary we fill in from OnDOMReady) instead of a blank
+    /// window.
+    ///
+    window_->ShowWhenReady();
   }
 
   virtual ~MyApp() {}

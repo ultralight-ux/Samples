@@ -38,12 +38,14 @@ public:
     ///
     /// Create our Window.
     ///
-    /// This command creates a native platform window and shows it immediately.
+    /// This command creates a native platform window. We pass WindowFlags::Hidden so the window
+    /// stays off-screen until our page is ready to display (see ShowWhenReady() below).
     ///
     /// The window's size (900 by 600) is in DPI-independent logical pixels; the actual size in
     /// pixels is automatically determined by the monitor's DPI.
     ///
-    window_ = Window::Create(app_->main_monitor(), 900, 600, false, WindowFlags::Titled);
+    window_ = Window::Create(app_->main_monitor(), 900, 600, false,
+                             WindowFlags::Titled | WindowFlags::Hidden);
 
     ///
     /// Set the title of our window.
@@ -72,6 +74,15 @@ public:
     /// below.
     ///
     window_->set_listener(this);
+
+    ///
+    /// Show the window once our page has loaded and settled.
+    ///
+    /// The page loads, runs its scripts, and lays out while the window is still hidden, so the
+    /// first frame on screen is the finished page instead of a blank window. If the page takes
+    /// longer than the timeout (half a second by default), the window shows anyway.
+    ///
+    window_->ShowWhenReady();
   }
 
   virtual ~MyApp() {}

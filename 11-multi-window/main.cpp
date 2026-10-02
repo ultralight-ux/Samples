@@ -24,12 +24,15 @@ class HTMLWindow : public WindowListener {
   RefPtr<Window> window_;
   RefPtr<Panel> panel_;
 public:
+  ///
+  /// Windows start hidden so we can position them first and show them once their pages are
+  /// ready (see ShowWhenReady() in MyApp below).
+  ///
   HTMLWindow(const char* title, int x, int y, int width, int height) {
     window_ = Window::Create(App::instance()->main_monitor(), width, height, false,
       WindowFlags::Titled | WindowFlags::Resizable | WindowFlags::Hidden);
     window_->MoveTo(x, y);
     window_->SetTitle(title);
-    window_->Show();
     window_->set_listener(this);
 
     /// Each window has its own layout tree; a bare AddPanel() fills the window and tracks its
@@ -113,6 +116,13 @@ public:
     preview_window_.reset(new HTMLWindow("Ultralight Sample 11 - Live Preview",
                                          700, 50, 600, 700));
     preview_window_->view()->LoadURL("file:///preview.html");
+
+    ///
+    /// Show each window once its page has loaded and settled, so neither opens blank. Each
+    /// window waits on its own pages only.
+    ///
+    editor_window_->window()->ShowWhenReady();
+    preview_window_->window()->ShowWhenReady();
   }
 
   virtual ~MyApp() {}

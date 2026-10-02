@@ -75,10 +75,12 @@ public:
 
     ///
     /// Create the window with custom chrome. It stays a normal framed window underneath,
-    /// so the OS keeps the shadow, resize edges, snap gestures, and window animations.
+    /// so the OS keeps the shadow, resize edges, snap gestures, and window animations. It
+    /// starts hidden until its page is ready (see ShowWhenReady() below).
     ///
     window_ = Window::Create(app_->main_monitor(), 900, 620, false,
-        WindowFlags::CustomChrome | WindowFlags::Resizable | WindowFlags::Maximizable);
+        WindowFlags::CustomChrome | WindowFlags::Resizable | WindowFlags::Maximizable |
+        WindowFlags::Hidden);
     window_->SetTitle("Ultralight Sample 10 - Native Look and Feel");
     window_->set_listener(this);
 
@@ -157,6 +159,12 @@ public:
     });
     if (menu_listeners_.AttachTo(menu_panel_->view().get()))
       menu_panel_->view()->LoadURL("file:///menu.html");
+
+    ///
+    /// Show the window once the chrome page has loaded and settled, so the first frame on
+    /// screen is the finished chrome over the material instead of an empty frame.
+    ///
+    window_->ShowWhenReady();
   }
 
   virtual ~MyApp() {

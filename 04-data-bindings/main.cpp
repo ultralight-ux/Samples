@@ -133,9 +133,10 @@ public:
     app_ = App::Create();
 
     ///
-    /// Create our Window.
+    /// Create our Window, hidden until its page is ready (see ShowWhenReady() below).
     ///
-    window_ = Window::Create(app_->main_monitor(), 480, 400, false, WindowFlags::Titled);
+    window_ = Window::Create(app_->main_monitor(), 480, 400, false,
+                             WindowFlags::Titled | WindowFlags::Hidden);
     window_->SetTitle("Ultralight Sample 4 - Data Bindings");
     window_->set_listener(this);
 
@@ -146,9 +147,23 @@ public:
     panel_->view()->LoadURL("file:///dashboard.html");
 
     ///
-    /// Start the simulation thread. This thread never touches the model or the Context again.
+    /// Show the window once the page has loaded and settled, so the first frame on screen is
+    /// the finished dashboard instead of a blank window. The simulation starts in OnShow()
+    /// below; a page that updates every frame never settles, so starting it now would make
+    /// the window wait out the full timeout.
     ///
-    simulation_thread_ = std::thread(RunSimulationThread, panel_->view().get(), std::ref(quit_));
+    window_->ShowWhenReady();
+  }
+
+  ///
+  /// Inherited from WindowListener, called when the Window is shown.
+  ///
+  /// Start the simulation thread. This thread never touches the model or the Context again.
+  ///
+  virtual void OnShow(ultralight::Window* window) override {
+    if (!simulation_thread_.joinable())
+      simulation_thread_ = std::thread(RunSimulationThread, panel_->view().get(),
+                                       std::ref(quit_));
   }
 
   virtual ~MyApp() {}
