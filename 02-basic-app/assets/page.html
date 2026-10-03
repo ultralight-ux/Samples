@@ -3,37 +3,60 @@
   <head>
     <meta charset="utf-8">
     <title>Basic App</title>
+    <script>
+      // Pick the theme before the page draws: follow the OS light/dark setting (Ultralight
+      // feeds it to this media query) until the user picks one with the toggle.
+      const osDark = matchMedia('(prefers-color-scheme: dark)');
+      let userTheme = null;
+      function applyTheme() {
+        document.documentElement.dataset.theme = userTheme || (osDark.matches ? 'dark' : 'light');
+      }
+      osDark.addEventListener('change', applyTheme);
+      applyTheme();
+    </script>
     <style>
-      /* Ultralight sample design tokens, v2 (native-adaptive) */
       :root {
-        --bg: #eef0f5;         /* window ground */
-        --panel: #ffffff;      /* card / pane surface */
-        --panel-2: #f6f7fa;    /* inset surface (inputs, code, table heads) */
-        --text: #1b2030;
-        --muted: #6b7186;
-        --border: #e1e4ec;
-        --accent: #3b6cf6;     /* primary action / selection */
-        --accent-2: #7c3aed;   /* gradient partner, secondary series */
-        --ok: #18a058;  --warn: #e8a317;  --bad: #e5484d;
-        --sel: rgba(59, 108, 246, 0.12);   /* selection wash + focus ring */
-        --shadow: 0 4px 12px rgba(16, 24, 40, 0.08);
-        --shadow-pop: 0 12px 28px rgba(16, 24, 40, 0.16);
+        --bg: #ffffff;
+        --text: #1d1d1f;
+        --muted: #6e6e73;
+        --haze: rgba(109, 43, 255, 0.07);
+        --wash-1: rgba(168, 60, 235, 0.3);
+        --wash-2: rgba(64, 92, 228, 0.2);
+        --wash-3: rgba(58, 120, 240, 0.26);
+        --wash-4: rgba(60, 60, 220, 0.24);
+        --wash-5: rgba(80, 200, 210, 0.16);
+        --frost: rgba(255, 255, 255, 0.22);
+        --frost-edge: rgba(255, 255, 255, 0.35);
+        --frost-top: rgba(255, 255, 255, 0.5);
+        --frost-glow: rgba(255, 255, 255, 0.12);
+        --chip: rgba(255, 255, 255, 0.5);
+        --chip-edge: rgba(0, 0, 0, 0.08);
+        --hairline: rgba(0, 0, 0, 0.08);
+        --button: #6d2bff;
+        --button-hover: #7c42ff;
+        --button-text: #ffffff;
       }
 
-      /* The page follows the OS light/dark theme. Ultralight feeds the system
-         theme to this media query, so the swap below happens live with no
-         JavaScript. Note the page styles its own controls: built-in form
-         controls always render with their light appearance. */
-      @media (prefers-color-scheme: dark) {
-        :root {
-          --bg: #0f1117;  --panel: #171a23;  --panel-2: #1d2130;
-          --text: #e6e8ef;  --muted: #8b91a6;  --border: #2a2f40;
-          --accent: #4f8cff;  --accent-2: #a78bfa;
-          --ok: #3ecf8e;  --warn: #ffb648;  --bad: #ff5c6c;
-          --sel: rgba(79, 140, 255, 0.18);
-          --shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
-          --shadow-pop: 0 14px 36px rgba(0, 0, 0, 0.5);
-        }
+      :root[data-theme="dark"] {
+        --bg: #0a0b1c;
+        --text: rgba(242, 241, 251, 0.9);
+        --muted: rgba(242, 241, 251, 0.6);
+        --haze: rgba(141, 132, 174, 0.22);
+        --wash-1: rgba(150, 70, 235, 0.28);
+        --wash-2: rgba(84, 84, 235, 0.16);
+        --wash-3: rgba(70, 110, 240, 0.22);
+        --wash-4: rgba(72, 60, 225, 0.2);
+        --wash-5: rgba(70, 150, 220, 0.12);
+        --frost: rgba(255, 255, 255, 0.07);
+        --frost-edge: rgba(255, 255, 255, 0.11);
+        --frost-top: rgba(255, 255, 255, 0.16);
+        --frost-glow: rgba(255, 255, 255, 0.05);
+        --chip: rgba(255, 255, 255, 0.06);
+        --chip-edge: rgba(255, 255, 255, 0.1);
+        --hairline: rgba(255, 255, 255, 0.1);
+        --button: rgba(242, 241, 251, 0.92);
+        --button-hover: #ffffff;
+        --button-text: #15142b;
       }
 
       html, body {
@@ -41,56 +64,137 @@
         height: 100%;
       }
 
-      /* The engine resolves the generic font families below to each platform's
-         default browser fonts (eg, Segoe UI on Windows, Helvetica on macOS). */
+      /* AppCore maps the generic sans-serif family to Arial on Windows, so we name the
+         fonts we want and let each platform pick the first one it has. */
       body {
         display: flex;
         align-items: center;
         justify-content: center;
-        background: var(--bg);
+        font-family: "Segoe UI Variable Text", "SF Pro Text", "Segoe UI", Inter,
+                     "Helvetica Neue", sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
         color: var(--text);
-        font-family: sans-serif;
-        font-size: 13px;
-        line-height: 1.4;
         cursor: default;
         -webkit-user-select: none;
         overflow: hidden;
+        background-color: var(--bg);
+        background-image: radial-gradient(circle at 50% -373px, var(--haze), transparent 934px);
+        transition: background-color 200ms ease-out, color 200ms ease-out;
       }
 
-      /* A soft accent wash behind the card keeps the ground from reading flat. */
-      .wash {
+      /* The background matches the Ultralight website: five soft color washes that
+         screen-blend with each other inside an isolated layer, under a faint grain. */
+      .backdrop {
         position: fixed;
         inset: 0;
-        background:
-          radial-gradient(600px 380px at 30% 20%,
-                          color-mix(in srgb, var(--accent) 10%, transparent), transparent 70%),
-          radial-gradient(520px 360px at 75% 85%,
-                          color-mix(in srgb, var(--accent-2) 8%, transparent), transparent 70%);
+        z-index: -1;
+        isolation: isolate;
+        overflow: hidden;
       }
 
+      .backdrop span {
+        position: absolute;
+        inset: -320px;
+        mix-blend-mode: screen;
+        background: radial-gradient(var(--shape), var(--c),
+                                    color-mix(in srgb, var(--c) 72.5%, transparent) 30%,
+                                    color-mix(in srgb, var(--c) 32.2%, transparent) 55%,
+                                    color-mix(in srgb, var(--c) 8%, transparent) 80%,
+                                    transparent);
+      }
+
+      .backdrop span:nth-child(1) {
+        --c: var(--wash-1);
+        --shape: 630px at calc(14% + 230.4px) calc(18% + 204.8px);
+      }
+
+      .backdrop span:nth-child(2) {
+        --c: var(--wash-2);
+        --shape: 420px at calc(30% + 128px) calc(40% + 64px);
+      }
+
+      .backdrop span:nth-child(3) {
+        --c: var(--wash-3);
+        --shape: 558px at calc(84% - 217.6px) calc(26% + 153.6px);
+      }
+
+      .backdrop span:nth-child(4) {
+        --c: var(--wash-4);
+        --shape: 720px at calc(58% - 51.2px) calc(96% - 294.4px);
+      }
+
+      .backdrop span:nth-child(5) {
+        --c: var(--wash-5);
+        --shape: 300px at calc(72% - 140.8px) calc(70% - 128px);
+      }
+
+      .grain {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        opacity: 0.12;
+        mix-blend-mode: soft-light;
+        background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 0 0.5 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      }
+
+      /* The light/dark toggle in the corner shows the theme it switches to. */
+      .theme-toggle {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 36px;
+        height: 36px;
+        padding: 0;
+        color: var(--text);
+        background: var(--frost);
+        border: none;
+        border-radius: 10px;
+        box-shadow: inset 0 0 0 1px var(--hairline);
+        cursor: pointer;
+      }
+
+      .theme-toggle:focus {
+        outline: none;
+      }
+
+      .theme-toggle svg {
+        width: 18px;
+        height: 18px;
+      }
+
+      :root[data-theme="dark"] .icon-moon,
+      :root[data-theme="light"] .icon-sun {
+        display: none;
+      }
+
+      /* A frosted glass panel: a faint fill, a hairline edge with a brighter top
+         highlight, and a blur of the washes behind it. */
       .card {
-        position: relative;
-        width: 340px;
-        padding: 32px;
-        background: var(--panel);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        box-shadow: var(--shadow);
+        width: 400px;
+        padding: 36px 40px;
+        border-radius: 28px;
+        background-color: var(--frost);
+        box-shadow: inset 0 0 0 1px var(--frost-edge),
+                    inset 0 1px 0 var(--frost-top),
+                    inset 0 0 32px var(--frost-glow);
+        backdrop-filter: saturate(1.8) brightness(1.03) blur(20px);
       }
 
       .kicker {
-        font-size: 11px;
-        font-weight: 600;
-        letter-spacing: 0.08em;
-        text-transform: uppercase;
+        font-size: 13px;
         color: var(--muted);
       }
 
       h1 {
-        margin: 8px 0 12px;
-        font-size: 22px;
-        font-weight: 700;
-        letter-spacing: -0.02em;
+        margin: 4px 0 12px;
+        font-family: "Segoe UI Variable Display", "SF Pro Display", "Segoe UI", Inter,
+                     "Helvetica Neue", sans-serif;
+        font-size: 30px;
+        font-weight: 400;
       }
 
       p {
@@ -101,43 +205,31 @@
       code {
         font-family: monospace;
         font-size: 12px;
-        background: var(--panel-2);
-        border: 1px solid var(--border);
-        border-radius: 4px;
-        padding: 1px 5px;
+        color: var(--text);
+        background: var(--chip);
+        border-radius: 6px;
+        box-shadow: inset 0 0 0 1px var(--chip-edge);
+        padding: 1px 6px;
       }
 
       .btn {
-        display: inline-block;
-        padding: 9px 18px;
+        padding: 10px 22px;
         font: inherit;
         font-weight: 600;
-        color: #ffffff;
-        background: var(--accent);
+        color: var(--button-text);
+        background: var(--button);
         border: none;
-        border-radius: 8px;
-        box-shadow: var(--shadow);
+        border-radius: 12px;
         cursor: pointer;
-        transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
-                    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.2, 1),
-                    background-color 160ms ease-out;
+        transition: background-color 160ms ease-out;
       }
 
       .btn:hover {
-        background: color-mix(in srgb, var(--accent), #ffffff 10%);
-        box-shadow: var(--shadow-pop);
-        transform: translateY(-2px);
+        background: var(--button-hover);
       }
 
-      .btn:active {
-        background: color-mix(in srgb, var(--accent), #000000 12%);
-        box-shadow: var(--shadow);
-        transform: translateY(0);
-      }
-
-      .btn:focus-visible {
+      .btn:focus {
         outline: none;
-        box-shadow: 0 0 0 3px var(--sel), var(--shadow);
       }
 
       /* The button reveals these pointers in place (see the script below); the
@@ -146,6 +238,7 @@
         max-height: 0;
         opacity: 0;
         overflow: hidden;
+        text-align: left;
         transition: max-height 260ms cubic-bezier(0.2, 0.8, 0.2, 1),
                     opacity 200ms ease-out;
       }
@@ -160,25 +253,39 @@
       .next .step {
         display: flex;
         gap: 10px;
-        padding: 7px 0;
+        padding: 8px 0;
         color: var(--muted);
       }
 
-      .next .step + .step { border-top: 1px solid var(--panel-2); }
+      .next .step + .step { border-top: 1px solid var(--hairline); }
 
       .next .step::before {
         content: "";
         width: 6px;
         height: 6px;
-        margin-top: 5px;
+        margin-top: 8px;
         border-radius: 50%;
-        background: var(--accent);
+        background: var(--button);
         flex-shrink: 0;
       }
     </style>
   </head>
   <body>
-    <div class="wash"></div>
+    <div class="backdrop"><span></span><span></span><span></span><span></span><span></span></div>
+    <div class="grain"></div>
+
+    <button class="theme-toggle" id="theme" title="Switch theme">
+      <svg class="icon-moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>
+      </svg>
+      <svg class="icon-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+           stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="4"/>
+        <path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/>
+      </svg>
+    </button>
+
     <div class="card">
       <div class="kicker">Ultralight &middot; Basic App</div>
       <h1>Hello, Ultralight.</h1>
@@ -189,14 +296,18 @@
       </p>
       <button class="btn" id="go">Get Started</button>
       <div class="next">
-        <div class="step">Open <code>main.cpp</code>-- the whole app is about thirty lines.</div>
-        <div class="step">Sample 3 arranges several pages with the window's layout tree.</div>
-        <div class="step">Samples 4 through 6 connect pages like this one to native code.</div>
+        <div class="step"><span>Open <code>main.cpp</code>-- the whole app is about thirty lines.</span></div>
+        <div class="step"><span>Sample 3 arranges several pages with the window's layout tree.</span></div>
+        <div class="step"><span>Samples 4 through 6 connect pages like this one to native code.</span></div>
       </div>
     </div>
 
     <script>
-      // The reveal is plain page script; no native code is involved.
+      // The page's two bits of behavior are plain page script; no native code is involved.
+      document.getElementById('theme').addEventListener('click', () => {
+        userTheme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+        applyTheme();
+      });
       document.getElementById('go').addEventListener('click', () => {
         document.querySelector('.card').classList.add('open');
       });
