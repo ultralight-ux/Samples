@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Tidepool</title>
+<style>
+  @font-face { font-family: 'TP Fredoka'; src: url(fonts/Fredoka-wdth-wght.ttf); font-weight: 300 700; font-stretch: 75% 125%; }
+  @font-face { font-family: 'TP Shantell'; src: url(fonts/ShantellSans-Latin-var.ttf); font-weight: 300 800; }
+  :root { --ink: #3b335e; --foam: #fff8ea; }
+  body { background: #2a2347; color: var(--ink); font-family: 'TP Fredoka', sans-serif; }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  #world { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; }
+  #ui { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+  .layer { position: absolute; left: 0; top: 0; width: 100%; height: 100%; pointer-events: none; }
+  .abs { position: absolute; }
+  .wc { will-change: transform; }
+  .pw { position: absolute; }
+  .pw > svg, .pf > svg { position: absolute; }
+  .pf, .pc { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+  .t { position: absolute; white-space: nowrap; line-height: 1; }
+  .f500 { font-weight: 500; } .f600 { font-weight: 600; } .f700 { font-weight: 700; }
+  .disp { font-variation-settings: 'wdth' 112; }
+  .voice { font-family: 'TP Shantell', sans-serif; color: var(--ink); }
+  .pimv { font-size: 28px; line-height: 40px; font-variation-settings: 'wght' 520, 'INFM' 75, 'BNCE' 60; }
+  .mev { font-size: 26px; line-height: 34px; font-variation-settings: 'wght' 540, 'INFM' 40, 'BNCE' 20; }
+  .notev { font-size: 27px; line-height: 40px; font-variation-settings: 'wght' 470, 'INFM' 100, 'BNCE' 10; }
+  .latin { font-variation-settings: 'wght' 430, 'INFM' 100, 'BNCE' 0; }
+  .vw { display: inline-block; white-space: nowrap; }
+  .vc { display: inline-block; }
+  .ring { position: absolute; left: 0; top: 0; width: 0; height: 0; }
+  .tag { position: absolute; width: 0; height: 0; }
+  .tagin { left: 0; top: 0; transform: translateX(-50%); background: var(--ink); color: var(--foam);
+           padding: 9px 18px 10px; border-radius: 22px; font-size: 21px; box-shadow: 0 5px 0 rgba(59,51,94,.25); }
+  .tagin::after { content: ''; position: absolute; left: 50%; bottom: -6px; width: 14px; height: 14px; margin-left: -7px;
+                  background: var(--ink); border-radius: 3px; transform: rotate(45deg); }
+  .cnt { left: 58px; top: 56px; width: 30px; height: 30px; box-sizing: border-box; border-radius: 15px; background: var(--foam);
+         border: 3px solid var(--ink); font-size: 16px; text-align: center; line-height: 24px; }
+  .badge { position: absolute; width: 36px; height: 36px; box-sizing: border-box; border-radius: 50%; background: #ff7c6e;
+           border: 3.5px solid var(--ink); color: var(--foam); text-align: center; font-size: 20px; line-height: 28px; }
+  .qmark { width: 40px; height: 40px; box-sizing: border-box; border-radius: 50%; background: var(--ink); color: var(--foam);
+           font-size: 25px; text-align: center; line-height: 40px; }
+  .clam { position: absolute; transform-origin: 0 0; }
+  .lid { position: absolute; left: 0; top: 0; width: 0; height: 0; transform-origin: 0 0; }
+  .cbody { position: absolute; }
+  .card { position: absolute; width: 0; height: 0; transform-origin: 0 0; }
+  .sil path, .sil circle, .sil ellipse { fill: #ddcdb6; stroke: #ddcdb6; }
+  .sketch path, .sketch circle, .sketch ellipse { fill: none; stroke: #c4a24e; stroke-width: 1.7px; stroke-opacity: .8; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+
+  <filter id="glowS" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="5"/></filter>
+  <filter id="glowL" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="14"/></filter>
+</svg>
+<div id="stage">
+  <div id="world"></div>
+  <div id="ui"></div>
+</div>
+<script src="../_harness/scene.js"></script>
+<script src="motion.js"></script>
+<script src="art.js"></script>
+<script src="story.js"></script>
+<script src="world-art.js"></script>
+<script src="world.js"></script>
+<script src="ui.js"></script>
+<script>
+  scene.define({
+    name: 'tidepool',
+    duration: STORY.DUR,
+    keyTimes: [0.9, 2.4, 3.45, 4.6, 6.9, 10.1, 12.5, 13.45],
+    params: { soft: 1.5 },
+    routes: ['photon-fill', 'photon-stroke', 'photon-text', 'svg-inline', 'svg-textpath', 'variable-font-axes',
+      'svg-filter-bloom', 'css-blur', 'mix-blend-mode', 'backdrop-filter', 'css-mask', 'clip-path', 'composited-layer'],
+
+    setup(ctx) {
+      const W = ctx.width, H = ctx.height;
+      const s = Math.min(W / 1920, H / 1080);
+      ctx.LW = W / s; ctx.LH = H / s;
+      const ui = document.getElementById('ui');
+      ui.style.width = ctx.LW + 'px';
+      ui.style.height = ctx.LH + 'px';
+      ui.style.transform = `scale(${s})`;
+      ctx.world = buildWorld(ctx, document.getElementById('world'));
+      ctx.ui = buildUI(ctx, ui);
+    },
+
+    render(t, ctx) {
+      ctx.world.update(t);
+      ctx.ui.update(t);
+    },
+  });
+</script>
+</body>
+</html>

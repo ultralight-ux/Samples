@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Game UI Samples</title>
+<style>
+  @font-face {
+    font-family: 'Game UI Sans';
+    src: url(fonts/HankenGrotesk-wght.ttf);
+    font-weight: 100 900;
+  }
+
+  :root {
+    --page: #111111;
+    --text: #f2f2f2;
+    --muted: #a6a6a6;
+    --gap: 40px;
+  }
+
+  html { background: var(--page); cursor: default; }
+  * { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+  body {
+    margin: 0;
+    padding: 56px 80px;
+    color: var(--text);
+    font: 400 15px/1.45 'Game UI Sans', sans-serif;
+  }
+
+  header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 32px;
+    margin-bottom: 40px;
+  }
+  h1 {
+    margin: 0 0 10px;
+    font-size: 32px;
+    font-weight: 600;
+    line-height: 1.1;
+  }
+  header p { margin: 0; color: var(--muted); font-size: 16px; }
+  header .keys { text-align: right; font-size: 14px; }
+  kbd {
+    display: inline-block;
+    padding: 2px 6px;
+    font: 500 12px/1.3 'Game UI Sans', sans-serif;
+    color: var(--text);
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 3px;
+  }
+
+  #scenes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 40px var(--gap);
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (max-width: 1000px) { #scenes { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+
+  .card {
+    display: block;
+    color: inherit;
+    text-decoration: none;
+    outline: none;
+  }
+  .card img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    border-radius: 4px;
+    background: #1c1c1c;
+    outline: 2px solid transparent;
+    outline-offset: 4px;
+    transition: outline-color 120ms ease-out;
+  }
+  .card:focus img { outline-color: #ffffff; }
+  .card h2 {
+    margin: 16px 0 4px;
+    font-size: 17px;
+    font-weight: 600;
+    line-height: 1.3;
+  }
+  .card p { margin: 0; color: var(--muted); font-size: 14px; }
+
+  #veil {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    pointer-events: none;
+    transition: opacity 250ms ease-out;
+  }
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>Game UI Samples</h1>
+    <p>Six scenes built with HTML, CSS, SVG, and canvas, rendered live by Ultralight.</p>
+  </div>
+  <p class="keys">Choose with the mouse or arrow keys, open with <kbd>Enter</kbd>.<br>
+    Press <kbd>Esc</kbd> in a scene to come back.</p>
+</header>
+
+<ul id="scenes">
+  <li><a class="card" href="scenes/flight-hud/index.html">
+    <img src="thumbs/flight-hud.webp" alt="">
+    <h2>Flight HUD</h2>
+    <p>Sci-fi flight HUD</p>
+  </a></li>
+  <li><a class="card" href="scenes/overdrive/index.html">
+    <img src="thumbs/overdrive.webp" alt="">
+    <h2>Overdrive</h2>
+    <p>Racing HUD</p>
+  </a></li>
+  <li><a class="card" href="scenes/lightfingers/index.html">
+    <img src="thumbs/lightfingers.webp" alt="">
+    <h2>Lightfingers</h2>
+    <p>Heist RPG menus</p>
+  </a></li>
+  <li><a class="card" href="scenes/ashen-reliquary/index.html">
+    <img src="thumbs/ashen-reliquary.webp" alt="">
+    <h2>The Ashen Reliquary</h2>
+    <p>Dark-fantasy inventory</p>
+  </a></li>
+  <li><a class="card" href="scenes/wind-and-ink/index.html">
+    <img src="thumbs/wind-and-ink.webp" alt="">
+    <h2>Wind and Ink</h2>
+    <p>Ink-painted samurai duel</p>
+  </a></li>
+  <li><a class="card" href="scenes/tidepool/index.html">
+    <img src="thumbs/tidepool.webp" alt="">
+    <h2>Tidepool</h2>
+    <p>Cozy island life sim</p>
+  </a></li>
+</ul>
+
+<div id="veil"></div>
+
+<script>
+  (() => {
+    const cards = [...document.querySelectorAll('.card')];
+    const veil = document.getElementById('veil');
+    let leaving = false;
+
+    let last = 0;
+    try { last = +sessionStorage.getItem('game-ui-card') || 0; } catch (e) {}
+    cards[Math.min(last, cards.length - 1)].focus();
+
+    const reveal = () => { if (!leaving) veil.style.opacity = '0'; };
+    addEventListener('load', reveal);
+    setTimeout(reveal, 1500);
+
+    function open(card) {
+      if (leaving) return;
+      leaving = true;
+      try { sessionStorage.setItem('game-ui-card', cards.indexOf(card)); } catch (e) {}
+      veil.style.transitionDuration = '200ms';
+      veil.style.opacity = '1';
+      setTimeout(() => { location.href = card.href; }, 220);
+    }
+
+    for (const card of cards) {
+      card.addEventListener('mouseenter', () => card.focus());
+      card.addEventListener('click', (e) => { e.preventDefault(); open(card); });
+    }
+
+    function columns() {
+      const top = cards[0].offsetTop;
+      const n = cards.findIndex((c) => c.offsetTop !== top);
+      return n < 0 ? cards.length : n;
+    }
+    addEventListener('keydown', (e) => {
+      const i = cards.indexOf(document.activeElement);
+      if (e.key === 'Enter' && i >= 0) { e.preventDefault(); open(cards[i]); return; }
+      const step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -columns(), ArrowDown: columns() }[e.key];
+      if (step === undefined) return;
+      e.preventDefault();
+      const next = i < 0 ? 0 : i + step;
+      if (next >= 0 && next < cards.length) cards[next].focus();
+    });
+  })();
+</script>
+</body>
+</html>

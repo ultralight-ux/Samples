@@ -42,6 +42,7 @@ Integrating the library into an application that owns its own rendering loop.
 | Sample | What it teaches |
 | --- | --- |
 | `09-opengl-integration` | Embedding web content into an existing OpenGL application with a custom Surface, including input event translation. |
+| `13-game-ui` | A gallery of animated game interfaces (HUDs, menus, an inventory) built with HTML, CSS, SVG, and canvas, with a chooser page to open each one. |
 
 ## App
 

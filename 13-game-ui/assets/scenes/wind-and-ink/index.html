@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Wind and Ink</title>
+<link rel="stylesheet" href="ink.css">
+</head>
+<body>
+<div id="stage">
+  <div id="world">
+    <div id="cam">
+      <div id="sky" class="lay">
+        <img id="sky-day" src="assets/sky-day.jpg" alt="">
+        <img id="sky-dusk" src="assets/sky-dusk.jpg" alt="">
+        <img id="sky-ink" src="assets/sky-ink.jpg" alt="">
+      </div>
+      <div id="ground" class="lay">
+        <img id="ground-day" src="assets/ground-day.jpg" alt="">
+        <img id="ground-dusk" src="assets/ground-dusk.jpg" alt="">
+        <img id="ground-ink" src="assets/ground-ink.jpg" alt="">
+      </div>
+      <div id="foe" class="lay"></div>
+      <div id="wfx" class="lay"></div>
+      <div id="reeds" class="lay"></div>
+      <div id="leaves" class="lay"></div>
+    </div>
+    <div id="inkmode"></div>
+    <div id="flash"></div>
+  </div>
+  <div id="paper"></div>
+  <div id="paper-full"></div>
+  <div id="hud"></div>
+</div>
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="soft" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="5"/>
+    </filter>
+    <filter id="softer" x="-30%" y="-30%" width="160%" height="160%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="9"/>
+    </filter>
+
+    <filter id="glow3" x="-60%" y="-60%" width="220%" height="220%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="3"/>
+    </filter>
+    <filter id="glow10" x="-60%" y="-60%" width="220%" height="220%" color-interpolation-filters="sRGB">
+      <feGaussianBlur stdDeviation="10"/>
+    </filter>
+  </defs>
+</svg>
+<script src="../_harness/scene.js"></script>
+<script src="brush.js"></script>
+<script src="foe.js"></script>
+<script src="assets/mist.js"></script>
+<script src="ink.js"></script>
+</body>
+</html>

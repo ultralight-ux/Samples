@@ -1,0 +1,47 @@
+@font-face { font-family: 'WI Mincho'; src: url(fonts/WI-Mincho-500.ttf); font-weight: 500; }
+@font-face { font-family: 'WI Mincho'; src: url(fonts/WI-Mincho-800.ttf); font-weight: 800; }
+@font-face { font-family: 'WI Brush'; src: url(fonts/WI-Brush.ttf); }
+@font-face { font-family: 'WI Spectral'; src: url(fonts/Spectral-Light.ttf); font-weight: 300; }
+@font-face { font-family: 'WI Spectral'; src: url(fonts/Spectral-LightItalic.ttf); font-weight: 300; font-style: italic; }
+@font-face { font-family: 'WI Spectral'; src: url(fonts/Spectral-Regular.ttf); font-weight: 400; }
+@font-face { font-family: 'WI Spectral'; src: url(fonts/Spectral-Italic.ttf); font-weight: 400; font-style: italic; }
+@font-face { font-family: 'WI Spectral'; src: url(fonts/Spectral-Medium.ttf); font-weight: 500; }
+
+:root {
+  --washi: #ece3cf;
+  --washi-shade: #d8ccb2;
+  --sumi: #1b1712;
+  --shu: #c0392b;
+  --kin: #b8954f;
+  --kin-light: #d9c08a;
+}
+
+body { background: #2a2119; color: var(--sumi); font-family: 'WI Spectral', serif; }
+#stage { position: absolute; inset: 0; overflow: hidden; }
+#world { position: absolute; inset: 0; overflow: hidden; isolation: isolate; }
+#cam { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+.lay { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 960px 540px; will-change: transform; }
+#sky img, #ground img { position: absolute; left: 0; top: 0; display: block; }
+#sky img { width: 2112px; height: 1188px; left: -96px; top: -54px; }
+#ground img { width: 2112px; height: 702px; left: -96px; top: 432px;
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 90px); mask-image: linear-gradient(to bottom, transparent 0, #000 90px); }
+#inkmode { position: absolute; inset: 0; background: #888; mix-blend-mode: saturation; opacity: 0; }
+#flash { position: absolute; inset: 0; background: #f4ecda; opacity: 0; }
+
+#paper, #paper-full { position: absolute; left: 0; top: 0; width: 100%; height: 100%;
+  background: var(--washi) url(assets/paper.jpg) center / cover; will-change: transform, opacity; }
+#paper { -webkit-mask-image: url(assets/margin.png); mask-image: url(assets/margin.png);
+  -webkit-mask-size: 100% 100%; mask-size: 100% 100%; transform-origin: 50% 50%; }
+#paper-full { opacity: 0; box-shadow: inset 0 0 0 3000px rgba(110, 80, 40, .1), inset 0 0 240px rgba(90, 60, 30, .22); }
+
+#hud { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.abs { position: absolute; }
+.cl { position: absolute; width: 0; height: 0; }
+svg.ink { position: absolute; overflow: visible; }
+
+.v { writing-mode: vertical-rl; white-space: nowrap; }
+.vs { width: 1em; text-align: center; line-height: 1; }
+.jp { font-family: 'WI Mincho', serif; }
+.brushfont { font-family: 'WI Brush', serif; }
+.en { font-family: 'WI Spectral', serif; }
+.t { position: absolute; white-space: nowrap; line-height: 1; }

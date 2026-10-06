@@ -1,0 +1,56 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Overdrive</title>
+<link rel="stylesheet" href="overdrive.css">
+</head>
+<body>
+<div id="stage">
+
+  <div id="world">
+    <div id="cam">
+      <canvas id="sky"></canvas>
+      <div id="skyline-far" class="skyline"></div>
+      <div id="skyline-near" class="skyline"></div>
+      <canvas id="track"></canvas>
+      <div id="player">
+
+        <div class="plume"><i class="pl-n"></i><b class="pl-a"><i class="pa-g"></i></b></div>
+        <div class="plume"><i class="pl-n"></i><b class="pl-a"><i class="pa-g"></i></b></div>
+        <img id="craft" src="assets/craft-ktn.png" alt="">
+        <img id="craft-t" src="assets/craft-ktn-tunnel.png" alt="">
+        <img id="craft-od" src="assets/craft-ktn-nozzle-od.png" alt="">
+        <img id="craft-glow-w" class="craft-glow" src="assets/craft-ktn-glow.png" alt="">
+        <img id="craft-glow-t" class="craft-glow" src="assets/craft-ktn-glow.png" alt="">
+        <img id="craft-glow-od" class="craft-glow" src="assets/craft-ktn-glow-od.png" alt="">
+        <div class="flame"></div><div class="flame"></div>
+        <div class="nozzle"></div><div class="nozzle"></div><div class="nozzle nz-a"></div><div class="nozzle nz-a"></div>
+        <div class="flare"></div><div class="flare"></div>
+      </div>
+    </div>
+    <div id="boost"></div>
+    <div id="haze"></div>
+    <div id="tint"></div>
+    <div id="vignette"></div>
+    <div id="dim"></div>
+    <div id="flash"></div>
+  </div>
+
+  <div id="hud-scrim"></div>
+  <div id="hud-dodge"></div>
+  <div id="hud-glow"></div>
+  <div id="hud"></div>
+  <div id="events-glow"></div>
+  <div id="events"></div>
+  <div id="overlay"></div>
+</div>
+
+<script src="../_harness/scene.js"></script>
+<script src="assets/craft.js"></script>
+<script src="track.js"></script>
+<script src="hud.js"></script>
+<script src="events.js"></script>
+<script src="overdrive.js"></script>
+</body>
+</html>

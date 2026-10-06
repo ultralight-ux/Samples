@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>Flight HUD</title>
+<style>
+  @font-face { font-family: 'GB Saira'; src: url(fonts/Saira-Variable.ttf); font-weight: 100 900; font-stretch: 50% 125%; }
+  body { background: #05070d; color: #eef7fb; }
+  #stage { position: absolute; inset: 0; overflow: hidden; }
+  #bg, #world, #hud { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+
+  #world, #hud { mix-blend-mode: screen; }
+  .p, .c, .t, .b, .bx { position: absolute; }
+  .p { width: 0; height: 0; }
+  .c { overflow: hidden; }
+  .t { white-space: pre; line-height: 1; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <filter id="glitch0" x="-2%" y="0" width="104%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="turbulence" baseFrequency="0.00012 0.05" numOctaves="1" seed="3" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="B"/>
+  </filter>
+  <filter id="glitch1" x="-2%" y="0" width="104%" height="100%" color-interpolation-filters="sRGB">
+    <feTurbulence type="turbulence" baseFrequency="0.0002 0.09" numOctaves="1" seed="11" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="11" xChannelSelector="R" yChannelSelector="B"/>
+  </filter>
+</svg>
+<div id="stage">
+  <div id="bg"></div>
+  <div id="world"></div>
+  <div id="hud"></div>
+</div>
+<script src="../_harness/scene.js"></script>
+<script src="hud-core.js"></script>
+<script src="hud.js"></script>
+<script src="backdrop.js"></script>
+<script>
+  const DURATION = 20;
+  const query = new URLSearchParams(location.search);
+  scene.define({
+    name: 'flight-hud',
+    controls: [[['Mouse move'], 'Look around']],
+    duration: DURATION,
+    keyTimes: [0.7, 5.5, 6.45, 8.22, 9.6, 13.35, 18.75],
+    variants: ['js-style', 'css', 'js-layer'],
+    params: {
+      markers: { default: 6, min: 0, max: 64 },
+      scale: { default: 1, min: 0.5, max: 2 },
+      shake: { default: 1, min: 0, max: 2 },
+      grade: { default: 1, min: 0, max: 1 },
+      svs: { default: 1, min: 0, max: 1 },
+      fx: { default: 1, min: 0, max: 1 },
+      blend: { default: 1, min: 0, max: 1 },
+      layers: { default: 0, min: 0, max: 1 },
+    },
+    routes: ['photon-text', 'photon-fill', 'photon-stroke', 'photon-hairline', 'photon-gradient',
+      'photon-clip', 'svg-inline', 'svg-filter', 'mask', 'composited-layer', 'image', 'blend-mode'],
+
+    setup(ctx) {
+      const sim = buildGameHUD(ctx);
+      const bg = buildBackdrop(ctx, sim);
+      const W = ctx.width, H = ctx.height;
+      const bgS = Math.max(W / 1920, H / 1080);
+      ctx.sim = sim;
+      ctx.bgT = [(W - 1920 * bgS) / 2, (H - 1080 * bgS) / 2, bgS];
+      ctx.els = ['bg', 'world', 'hud'].map((id) => document.getElementById(id));
+      const hudEl = ctx.els[2];
+      hudEl.style.width = sim.LW + 'px';
+      hudEl.style.height = sim.LH + 'px';
+      if (!ctx.params.blend) for (const el of ctx.els.slice(1)) el.style.mixBlendMode = 'normal';
+      if (ctx.params.layers) for (const el of ctx.els) el.style.willChange = 'transform';
+      ctx.dom = [[bg.root, ctx.els[0]], [sim.world, ctx.els[1]], [sim.root, hudEl]].map(([r, el]) => HUD.buildDOM(r, el, ctx.variant, DURATION));
+      if (ctx.variant === 'css' && query.get('flatten') === '1') queueMicrotask(() => ctx.dom.forEach((d) => d.freeze(ctx.time)));
+      ctx.look = [0, 0];
+      ctx.lookTarget = [0, 0];
+      ctx.glitch = '';
+      if (!query.has('t')) addEventListener('mousemove', (e) => { ctx.lookTarget = [0.5 - e.clientX / innerWidth, 0.5 - e.clientY / innerHeight]; });
+    },
+
+    render(t, ctx) {
+      for (const d of ctx.dom) d.update(t);
+      const k = ctx.params.shake, sim = ctx.sim, [bx, by, bs] = ctx.bgT;
+      const [sx, sy] = sim.shake(t), [vx, vy] = sim.shake(t - 0.04);
+      const L = ctx.look, LT = ctx.lookTarget;
+      L[0] += (LT[0] - L[0]) * 0.06; L[1] += (LT[1] - L[1]) * 0.06;
+      const wx = sx * k + L[0] * 60, wy = sy * k + L[1] * 34;
+      const wt = `translate(${(bx + wx * bs).toFixed(2)}px, ${(by + wy * bs).toFixed(2)}px) scale(${bs})`;
+      ctx.els[0].style.transform = ctx.els[1].style.transform = wt;
+      ctx.els[2].style.transform = `translate(${(sim.ox + 0.35 * vx * k * sim.scale).toFixed(2)}px, ${(sim.oy + 0.35 * vy * k * sim.scale).toFixed(2)}px) scale(${sim.scale})`;
+      const g = ctx.params.fx ? sim.glitch(t) : '';
+      if (g !== ctx.glitch) { ctx.els[2].style.filter = g; ctx.glitch = g; }
+    },
+  });
+</script>
+</body>
+</html>

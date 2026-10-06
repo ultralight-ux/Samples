@@ -1,0 +1,37 @@
+@font-face { font-family: 'LF Anton'; src: url(fonts/Anton-Regular.ttf); }
+@font-face { font-family: 'LF Abril'; src: url(fonts/AbrilFatface-Regular.ttf); }
+@font-face { font-family: 'LF Archivo'; src: url(fonts/Archivo-VF.ttf); font-weight: 100 900; font-stretch: 62% 125%; }
+@font-face { font-family: 'LF Sedgwick'; src: url(fonts/SedgwickAveDisplay-Regular.ttf); }
+
+:root { --red: #e60012; --ink: #000; --paper: #fff; --dried: #7a0009; }
+body { background: #000; color: #fff; }
+#stage { position: absolute; inset: 0; overflow: hidden; background: #000; }
+#cam { position: absolute; left: 0; top: 0; width: 100%; height: 100%; }
+#world { position: absolute; left: 0; top: 0; width: 100%; height: 100%; overflow: hidden; }
+#ui { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; transform-origin: 0 0; }
+
+.abs { position: absolute; left: 0; top: 0; }
+.scr { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+.bleed { position: absolute; left: -500px; top: -400px; width: 2920px; height: 1880px; }
+.o0 { transform-origin: 0 0; }
+.ink { filter: url(#ink); }
+.grit { background: #000 url(assets/grit.png); }
+#grain { position: absolute; left: -96px; top: -96px; width: 2112px; height: 1272px; pointer-events: none;
+  background: url(assets/grain.png); will-change: transform; }
+
+.anton { font-family: 'LF Anton'; font-weight: 400; line-height: 1; white-space: pre; }
+.abril { font-family: 'LF Abril'; font-weight: 400; line-height: 1; white-space: pre; }
+.arch { font-family: 'LF Archivo'; font-stretch: 70%; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.arch.cap { text-transform: uppercase; letter-spacing: 0.08em; font-weight: 800; white-space: pre; }
+.tag { font-family: 'LF Sedgwick'; line-height: 1; white-space: pre; }
+
+.tape { display: inline-block; white-space: pre; padding: 0.3em 0.75em 0.32em; background: #000; color: #fff;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 6px) 17%, 100% 35%, calc(100% - 8px) 55%, 100% 73%,
+    calc(100% - 4px) 90%, 100% 100%, 0 100%, 7px 84%, 0 66%, 5px 47%, 0 29%, 8px 13%); }
+.tape.w { background: #fff; color: #000; }
+.tape.r { background: #e60012; color: #fff; }
+
+.wl { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+.bokeh { position: absolute; border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 236, 232, 0.95) 0, rgba(255, 90, 80, 0.55) 28%, rgba(230, 0, 18, 0.18) 52%, rgba(230, 0, 18, 0) 70%); }
+.streak { position: absolute; border-radius: 50%; }

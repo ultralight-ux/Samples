@@ -24,6 +24,7 @@ add_subdirectory(09-opengl-integration)
 add_subdirectory(10-native-look-and-feel)
 add_subdirectory(11-multi-window)
 add_subdirectory(12-web-browser)
+add_subdirectory(13-game-ui)
 
 set(SAMPLES_TARGETS
     01-render-to-png
@@ -38,7 +39,8 @@ set(SAMPLES_TARGETS
     09-opengl-integration
     10-native-look-and-feel
     11-multi-window
-    12-web-browser)
+    12-web-browser
+    13-game-ui)
 
 if (${ALLINONE_BUILD})
     foreach(target ${SAMPLES_TARGETS})
